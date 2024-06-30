@@ -13,7 +13,7 @@ class RaidStrategyContext : public NamedObjectContext<Strategy>
         {
             creators["naxx"] = &RaidStrategyContext::naxx;
             creators["bwl"] = &RaidStrategyContext::bwl;
-            creators["molten core"] = &RaidStrategyContext::moltenCore;
+            creators["moltencore"] = &RaidStrategyContext::moltenCore;
         }
     private:
         static Strategy* naxx(PlayerbotAI* botAI) { return new RaidNaxxStrategy(botAI); }
