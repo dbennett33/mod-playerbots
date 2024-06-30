@@ -4,15 +4,15 @@
 #include "ScriptedCreature.h"
 #include "Trigger.h"
 
-bool AuraRemovedTrigger::IsActive() {
-    bool check = botAI->HasAura(name, bot, false, false, -1, true);
-    bool ret = false;
-    if (prev_check && !check) {
-        ret = true;
-    }
-    prev_check = check;
-    return ret;
-}
+//bool AuraRemovedTrigger::IsActive() {
+//    bool check = botAI->HasAura(name, bot, false, false, -1, true);
+//    bool ret = false;
+//    if (prev_check && !check) {
+//        ret = true;
+//    }
+//    prev_check = check;
+//    return ret;
+//}
 
 //bool MutatingInjectionRemovedTrigger::IsActive()
 //{
@@ -23,42 +23,42 @@ bool AuraRemovedTrigger::IsActive() {
 //    return HasNoAuraTrigger::IsActive() && botAI->GetState() == BOT_STATE_COMBAT && botAI->IsRanged(bot);
 //}
 
-template<class T>
-bool BossEventTrigger<T>::IsActive()
-{
-    Unit* boss = AI_VALUE(Unit*, "boss target");
-    if (!boss || boss->GetEntry() != boss_entry) {
-        return false;
-    }
-    T* ai = dynamic_cast<T*>(boss->GetAI());
-    EventMap *eventMap = &ai->events;
-    if (!eventMap) {
-        return false;
-    }
-    const uint32 event_time = eventMap->GetNextEventTime(event_id);
-    if (event_time != last_event_time) {
-        last_event_time = event_time;
-        return true;
-    }
-    return false;
-}
-
-template<class T>
-bool BossPhaseTrigger<T>::IsActive()
-{
-    Unit* boss = AI_VALUE2(Unit*, "find target", boss_name);
-    if (!boss) {
-        return false;
-    }
-    if (this->phase_mask == 0) {
-        return true;
-    }
-    T* boss_ai = dynamic_cast<T*>(boss->GetAI());
-    EventMap* eventMap = &boss_ai->events;
-    uint8 phase_mask = eventMap->GetPhaseMask();
-    // bot->Yell("phase mask detected: " + to_string(phase_mask) + " compare with " + to_string(this->phase_mask), LANG_UNIVERSAL);
-    return phase_mask == this->phase_mask;
-}
+//template<class T>
+//bool BossEventTrigger<T>::IsActive()
+//{
+//    Unit* boss = AI_VALUE(Unit*, "boss target");
+//    if (!boss || boss->GetEntry() != boss_entry) {
+//        return false;
+//    }
+//    T* ai = dynamic_cast<T*>(boss->GetAI());
+//    EventMap *eventMap = &ai->events;
+//    if (!eventMap) {
+//        return false;
+//    }
+//    const uint32 event_time = eventMap->GetNextEventTime(event_id);
+//    if (event_time != last_event_time) {
+//        last_event_time = event_time;
+//        return true;
+//    }
+//    return false;
+//}
+//
+//template<class T>
+//bool BossPhaseTrigger<T>::IsActive()
+//{
+//    Unit* boss = AI_VALUE2(Unit*, "find target", boss_name);
+//    if (!boss) {
+//        return false;
+//    }
+//    if (this->phase_mask == 0) {
+//        return true;
+//    }
+//    T* boss_ai = dynamic_cast<T*>(boss->GetAI());
+//    EventMap* eventMap = &boss_ai->events;
+//    uint8 phase_mask = eventMap->GetPhaseMask();
+//    // bot->Yell("phase mask detected: " + to_string(phase_mask) + " compare with " + to_string(this->phase_mask), LANG_UNIVERSAL);
+//    return phase_mask == this->phase_mask;
+//}
 
 //bool GrobbulusCloudTrigger::IsActive()
 //{
