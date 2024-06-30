@@ -215,3 +215,16 @@ bool BwlChatShortcutAction::Execute(Event event)
     botAI->TellMasterNoFacing("Add Bwl Strategies!");
     return true;
 }
+
+bool MoltenCoreChatShortcutAction::Execute(Event event)
+{
+    Player* master = GetMaster();
+    if (!master)
+        return false;
+
+    botAI->Reset();
+    botAI->ChangeStrategy("+moltencore", BOT_STATE_NON_COMBAT);
+    botAI->ChangeStrategy("+moltencore", BOT_STATE_COMBAT);
+    botAI->TellMasterNoFacing("Add Molten Core Strategies!");
+    return true;
+}

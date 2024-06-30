@@ -87,4 +87,11 @@ class BwlChatShortcutAction : public Action
         BwlChatShortcutAction(PlayerbotAI* ai) : Action(ai, "bwl chat shortcut") {}
         virtual bool Execute(Event event);
 };
+
+class MoltenCoreChatShortcutAction : public Action
+{
+    public:
+        MoltenCoreChatShortcutAction(PlayerbotAI* ai) : Action(ai, "moltencore chat shortcut") {}
+        virtual bool Execute(Event event);
+};
 #endif
