@@ -1,0 +1,47 @@
+name: trigger-vps-build
+
+# Re-run AzerothCore VPS build when the module changes (paired AC branch + module ref).
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Map module branch to AzerothCore branch
+        id: map
+        run: |
+          case "${GITHUB_REF#refs/heads/}" in
+            master)
+              echo "acore_branch=Playerbot" >> "$GITHUB_OUTPUT"
+              ;;
+            dev)
+              echo "acore_branch=dev" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported branch" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Trigger dbennett33/azerothcore-wotlk vps-build
+        env:
+          GH_TOKEN: ${{ secrets.ACORE_WORKFLOW_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "ACORE_WORKFLOW_PAT secret is not set; skip remote trigger."
+            exit 0
+          fi
+          gh workflow run vps-build.yml \
+            --repo dbennett33/azerothcore-wotlk \
+            --ref "${{ steps.map.outputs.acore_branch }}"
+          echo "Triggered vps-build on AzerothCore branch ${{ steps.map.outputs.acore_branch }}"

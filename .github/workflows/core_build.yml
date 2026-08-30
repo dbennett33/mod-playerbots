@@ -1,22 +1,23 @@
-name: ubuntu-build
+name: core-build
 
 on:
   push:
-    branches: [ "master", "test-staging" ]
+    branches:
+      - master
+      - dev
   pull_request:
-    branches: [ "master", "test-staging" ]
+    branches:
+      - master
 
 concurrency:
-  group: "core-build-${{ github.event.pull_request.number }}"
+  group: core-build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
     strategy:
-      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
       fail-fast: false
       matrix:
-        # the result of the matrix will be the combination of all attributes, so we get os*compiler builds
         include:
           - os: ubuntu-22.04
             c_compiler: clang
@@ -30,29 +31,35 @@ jobs:
             c_compiler: gcc
             cpp_compiler: g++
             build_type: Release
-            
+
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }}-${{ matrix.cpp_compiler }}
 
     steps:
       - name: Checkout AzerothCore
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          repository: 'mod-playerbots/azerothcore-wotlk'
-          ref: ${{ (github.base_ref || github.ref_name) == 'test-staging' && 'test-staging' || 'Playerbot' }}
+          repository: dbennett33/azerothcore-wotlk
+          ref: ${{ github.ref_name == 'dev' && 'dev' || 'Playerbot' }}
 
       - name: Set reusable strings
         id: strings
         shell: bash
         run: |
           echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-          
-      - name: Checkout Playerbot Module
-        uses: actions/checkout@v3
+
+      - name: Checkout mod-playerbots (this repo)
+        uses: actions/checkout@v4
         with:
-          repository: 'mod-playerbots/mod-playerbots'
-          path: 'modules/mod-playerbots'
-      
+          path: modules/mod-playerbots
+
+      - name: Checkout mod-individual-progression
+        uses: actions/checkout@v4
+        with:
+          repository: ZhengPeiRu21/mod-individual-progression
+          ref: master
+          path: modules/mod-individual-progression
+
       - name: Cache
         uses: actions/cache@v4
         with:
@@ -63,16 +70,18 @@ jobs:
             ccache:${{ matrix.os }}:${{ matrix.c_compiler }}
             ccache:${{ matrix.os }}
 
-      - name: Install Requirements
-        run: sudo apt-get update && sudo apt-get install ccache git cmake make gcc g++ clang libmysqlclient-dev libssl-dev libbz2-dev libreadline-dev libncurses-dev mysql-server libboost-all-dev
+      - name: Install requirements
+        run: sudo apt-get update && sudo apt-get install -y ccache git cmake make gcc g++ clang libmysqlclient-dev libssl-dev libbz2-dev libreadline-dev libncurses-dev libboost-all-dev
 
       - name: Configure CMake
-        run: >
-          cmake -B ${{ steps.strings.outputs.build-output-dir }}
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -S ${{ github.workspace }}
+        run: |
+          cmake -B ${{ steps.strings.outputs.build-output-dir }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DSCRIPTS=static \
+            -DMODULES=static \
+            -S ${{ github.workspace }}
 
       - name: Build
-        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} -j "$(nproc)"
