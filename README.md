@@ -6,7 +6,7 @@
     <a href="https://github.com/mod-playerbots/mod-playerbots/blob/master/README_ES.md">Español</a>
 </p>
 
- 
+
 <div align="center">
   <img src="banner.png" alt="Playerbots Banner" width="700px">
 </div>
