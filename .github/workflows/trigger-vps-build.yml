@@ -32,7 +32,16 @@ jobs:
               ;;
           esac
 
-      - name: Trigger dbennett33/azerothcore-wotlk vps-build
+      - name: Resolve AzerothCore repository
+        id: acore
+        run: |
+          repo="${{ vars.ACORE_REPO }}"
+          if [[ -z "$repo" ]]; then
+            repo="${GITHUB_REPOSITORY_OWNER}/azerothcore-wotlk"
+          fi
+          echo "repository=${repo}" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger AzerothCore vps-build
         env:
           GH_TOKEN: ${{ secrets.ACORE_WORKFLOW_PAT }}
         run: |
@@ -42,6 +51,6 @@ jobs:
             exit 0
           fi
           gh workflow run vps-build.yml \
-            --repo dbennett33/azerothcore-wotlk \
+            --repo "${{ steps.acore.outputs.repository }}" \
             --ref "${{ steps.map.outputs.acore_branch }}"
           echo "Triggered vps-build on AzerothCore branch ${{ steps.map.outputs.acore_branch }}"

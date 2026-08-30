@@ -1,4 +1,4 @@
-# Branching and CI (dbennett33/mod-playerbots)
+# Branching and CI
 
 ## Branches
 
@@ -31,7 +31,9 @@ Add **Settings → Secrets → Actions**:
 
 | Name | Value |
 |------|--------|
-| `ACORE_WORKFLOW_PAT` | PAT with `workflow` scope on `dbennett33/azerothcore-wotlk` |
+| `ACORE_WORKFLOW_PAT` | PAT with `workflow` scope on your AzerothCore repo |
+
+Optional repo **variable** `ACORE_REPO` if AzerothCore is not `{owner}/azerothcore-wotlk`.
 
 Without this secret, module pushes still run `core_build` but do not trigger the VPS.
 

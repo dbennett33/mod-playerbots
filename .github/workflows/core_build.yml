@@ -36,10 +36,19 @@ jobs:
     name: ${{ matrix.os }}-${{ matrix.cpp_compiler }}
 
     steps:
+      - name: Resolve AzerothCore repository
+        id: acore
+        run: |
+          repo="${{ vars.ACORE_REPO }}"
+          if [[ -z "$repo" ]]; then
+            repo="${GITHUB_REPOSITORY_OWNER}/azerothcore-wotlk"
+          fi
+          echo "repository=${repo}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout AzerothCore
         uses: actions/checkout@v4
         with:
-          repository: dbennett33/azerothcore-wotlk
+          repository: ${{ steps.acore.outputs.repository }}
           ref: ${{ github.ref_name == 'dev' && 'dev' || 'Playerbot' }}
 
       - name: Set reusable strings
