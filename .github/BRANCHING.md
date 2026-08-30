@@ -20,22 +20,28 @@ git push -u origin dev
 
 ## CI
 
-| Event | Branch | Local CI (`core_build`) | VPS (via AzerothCore) |
-|-------|--------|-------------------------|------------------------|
-| push / PR | `master` | ubuntu matrix build | `trigger-vps-build` → AC `Playerbot` build, no deploy |
-| push | `dev` | ubuntu matrix build | `trigger-vps-build` → AC `dev` build + test deploy |
+Module pushes do **not** rebuild AzerothCore on GitHub-hosted Ubuntu/Windows/macOS.
+They only trigger your fork’s **`vps-build`** (Debian 12 VM / VPS).
 
-## Secret (repository)
+| Event | Branch | Action |
+|-------|--------|--------|
+| push | `master` | `trigger-vps-build` → AC `Playerbot` `vps-build` (stage live, no auto-deploy) |
+| push | `dev` | `trigger-vps-build` → AC `dev` `vps-build` + auto test deploy |
+| manual | any | `core_build` / `windows_build` / `macos_build` via **Actions → Run workflow** if you want a smoke compile |
 
-Add **Settings → Secrets → Actions**:
+`vps-build` always checks out this module’s matching branch (`master` ↔ `Playerbot`, `dev` ↔ `dev`).
+
+## Secret (required)
+
+**Settings → Secrets → Actions** on `mod-playerbots`:
 
 | Name | Value |
 |------|--------|
-| `ACORE_WORKFLOW_PAT` | PAT with `workflow` scope on your AzerothCore repo |
+| `ACORE_WORKFLOW_PAT` | Fine-grained or classic PAT that can run workflows on your AzerothCore fork (`workflow` scope / Actions write) |
 
 Optional repo **variable** `ACORE_REPO` if AzerothCore is not `{owner}/azerothcore-wotlk`.
 
-Without this secret, module pushes still run `core_build` but do not trigger the VPS.
+Without `ACORE_WORKFLOW_PAT`, module pushes fail at the trigger step (by design).
 
 ## GitHub branch protection
 

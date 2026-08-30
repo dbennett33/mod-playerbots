@@ -47,8 +47,10 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${GH_TOKEN}" ]; then
-            echo "ACORE_WORKFLOW_PAT secret is not set; skip remote trigger."
-            exit 0
+            echo "ACORE_WORKFLOW_PAT secret is not set." >&2
+            echo "Create a PAT with workflow scope on your AzerothCore fork," >&2
+            echo "then add it as Actions secret ACORE_WORKFLOW_PAT." >&2
+            exit 1
           fi
           gh workflow run vps-build.yml \
             --repo "${{ steps.acore.outputs.repository }}" \

@@ -1,13 +1,10 @@
 name: core-build
 
+# Disabled as automatic CI. Module pushes trigger AzerothCore vps-build instead
+# (see trigger-vps-build.yml). Keep this for rare manual smoke compiles.
+
 on:
-  push:
-    branches:
-      - master
-      - dev
-  pull_request:
-    branches:
-      - master
+  workflow_dispatch:
 
 concurrency:
   group: core-build-${{ github.workflow }}-${{ github.ref }}
