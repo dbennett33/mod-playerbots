@@ -42,6 +42,7 @@
 #include "PullStrategy.h"
 #include "QuestStrategies.h"
 #include "RTSCStrategy.h"
+#include "RaidRunStrategy.h"
 #include "RacialsStrategy.h"
 #include "RangedCombatStrategy.h"
 #include "ReturnStrategy.h"
@@ -133,6 +134,9 @@ public:
         creators["master fishing"] = &StrategyContext::master_fishing;
         creators["wait for attack"] = &StrategyContext::wait_for_attack;
         creators["focus heal targets"] = &StrategyContext::focus_heal_targets;
+        creators["raid run leader"] = &StrategyContext::raid_run_leader;
+        creators["raid run follow"] = &StrategyContext::raid_run_follow;
+        creators["raid run regen"] = &StrategyContext::raid_run_regen;
     }
 
 private:
@@ -208,6 +212,9 @@ private:
     static Strategy* master_fishing(PlayerbotAI* botAI) { return new MasterFishingStrategy(botAI); }
     static Strategy* wait_for_attack(PlayerbotAI* botAI) { return new WaitForAttackStrategy(botAI); }
     static Strategy* focus_heal_targets(PlayerbotAI* botAI) { return new FocusHealTargetsStrategy(botAI); }
+    static Strategy* raid_run_leader(PlayerbotAI* botAI) { return new RaidRunLeaderStrategy(botAI); }
+    static Strategy* raid_run_follow(PlayerbotAI* botAI) { return new RaidRunFollowStrategy(botAI); }
+    static Strategy* raid_run_regen(PlayerbotAI* botAI) { return new RaidRunRegenStrategy(botAI); }
 };
 
 class MovementStrategyContext : public NamedObjectContext<Strategy>

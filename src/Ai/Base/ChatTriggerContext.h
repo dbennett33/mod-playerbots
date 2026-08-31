@@ -154,6 +154,13 @@ public:
         creators["roll"] = &ChatTriggerContext::roll_action;
         creators["wait for attack time"] = &ChatTriggerContext::wait_for_attack_time;
         creators["focus heal"] = &ChatTriggerContext::focus_heal;
+        creators["raid go"] = &ChatTriggerContext::raid_go;
+        creators["go speedrun"] = &ChatTriggerContext::go_speedrun;
+        creators["raid pause"] = &ChatTriggerContext::raid_pause;
+        creators["pause"] = &ChatTriggerContext::pause;
+        creators["raid stop"] = &ChatTriggerContext::raid_stop;
+        creators["stop"] = &ChatTriggerContext::stop;
+        creators["raid status"] = &ChatTriggerContext::raid_status;
     }
 
 private:
@@ -286,6 +293,13 @@ private:
     static Trigger* roll_action(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "roll"); }
     static Trigger* wait_for_attack_time(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "wait for attack time"); }
     static Trigger* focus_heal(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "focus heal"); }
+    static Trigger* raid_go(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid go"); }
+    static Trigger* go_speedrun(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "go speedrun"); }
+    static Trigger* raid_pause(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid pause"); }
+    static Trigger* pause(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "pause"); }
+    static Trigger* raid_stop(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid stop"); }
+    static Trigger* stop(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "stop"); }
+    static Trigger* raid_status(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid status"); }
 };
 
 #endif

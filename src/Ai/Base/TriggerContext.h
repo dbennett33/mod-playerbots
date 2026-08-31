@@ -19,6 +19,7 @@
 #include "NewRpgTriggers.h"
 #include "PullTriggers.h"
 #include "PvpTriggers.h"
+#include "RaidRunTriggers.h"
 #include "RangeTriggers.h"
 #include "RpgTriggers.h"
 #include "RtiTriggers.h"
@@ -249,6 +250,7 @@ public:
         creators["can use fishing bobber"] = &TriggerContext::can_use_fishing_bobber;
         creators["new pet"] = &TriggerContext::new_pet;
         creators["wait for attack safe distance"] = &TriggerContext::wait_for_attack_safe_distance;
+        creators["raid run regen"] = &TriggerContext::raid_run_regen;
     }
 
 private:
@@ -464,6 +466,7 @@ private:
     static Trigger* can_use_fishing_bobber(PlayerbotAI* ai) { return new CanUseFishingBobberTrigger(ai); }
     static Trigger* new_pet(PlayerbotAI* ai) { return new NewPetTrigger(ai); }
     static Trigger* wait_for_attack_safe_distance(PlayerbotAI* ai) { return new WaitForAttackSafeDistanceTrigger(ai); }
+    static Trigger* raid_run_regen(PlayerbotAI* botAI) { return new RaidRunRegenTrigger(botAI); }
 };
 
 #endif

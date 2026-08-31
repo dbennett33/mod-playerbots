@@ -78,6 +78,13 @@ void ChatCommandHandlerStrategy::InitTriggers(std::vector<TriggerNode*>& trigger
     triggers.push_back(new TriggerNode("disperse", { NextAction("disperse set", relevance) }));
     triggers.push_back(new TriggerNode("qi", { NextAction("query item usage", relevance) }));
     triggers.push_back(new TriggerNode("focus heal", { NextAction("focus heal targets", relevance) }));
+    triggers.push_back(new TriggerNode("raid go", { NextAction("raid run go chat", relevance) }));
+    triggers.push_back(new TriggerNode("go speedrun", { NextAction("raid run go chat", relevance) }));
+    triggers.push_back(new TriggerNode("raid pause", { NextAction("raid run pause chat", relevance) }));
+    triggers.push_back(new TriggerNode("pause", { NextAction("raid run pause chat", relevance) }));
+    triggers.push_back(new TriggerNode("raid stop", { NextAction("raid run stop chat", relevance) }));
+    triggers.push_back(new TriggerNode("stop", { NextAction("raid run stop chat", relevance) }));
+    triggers.push_back(new TriggerNode("raid status", { NextAction("raid run status chat", relevance) }));
 }
 
 // Commands where trigger name == action name.
