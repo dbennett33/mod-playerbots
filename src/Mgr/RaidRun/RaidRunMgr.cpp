@@ -51,7 +51,11 @@ RaidRunState* RaidRunMgr::GetState(Player* master)
     if (!master)
         return nullptr;
 
-    return &_states[master->GetGUID()];
+    auto itr = _states.find(master->GetGUID());
+    if (itr == _states.end())
+        return nullptr;
+
+    return &itr->second;
 }
 
 RaidRunState const* RaidRunMgr::GetState(Player const* master) const

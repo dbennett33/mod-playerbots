@@ -157,9 +157,7 @@ public:
         creators["raid go"] = &ChatTriggerContext::raid_go;
         creators["go speedrun"] = &ChatTriggerContext::go_speedrun;
         creators["raid pause"] = &ChatTriggerContext::raid_pause;
-        creators["pause"] = &ChatTriggerContext::pause;
         creators["raid stop"] = &ChatTriggerContext::raid_stop;
-        creators["stop"] = &ChatTriggerContext::stop;
         creators["raid status"] = &ChatTriggerContext::raid_status;
     }
 
@@ -296,9 +294,7 @@ private:
     static Trigger* raid_go(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid go"); }
     static Trigger* go_speedrun(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "go speedrun"); }
     static Trigger* raid_pause(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid pause"); }
-    static Trigger* pause(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "pause"); }
     static Trigger* raid_stop(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid stop"); }
-    static Trigger* stop(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "stop"); }
     static Trigger* raid_status(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid status"); }
 };
 

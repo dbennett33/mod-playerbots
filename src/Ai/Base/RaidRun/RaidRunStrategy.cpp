@@ -7,6 +7,16 @@
 #include "RaidRunStrategy.h"
 #include "Playerbots.h"
 
+std::vector<NextAction> RaidRunLeaderStrategy::getDefaultActions()
+{
+    return { NextAction("raid run leader", ACTION_HIGH) };
+}
+
+std::vector<NextAction> RaidRunFollowStrategy::getDefaultActions()
+{
+    return { NextAction("raid run follow tank", ACTION_DEFAULT) };
+}
+
 void RaidRunRegenStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     triggers.push_back(new TriggerNode(

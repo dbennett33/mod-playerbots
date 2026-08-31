@@ -15,7 +15,7 @@ public:
     RaidRunLeaderStrategy(PlayerbotAI* botAI) : Strategy(botAI) {}
 
     std::string const getName() override { return "raid run leader"; }
-    NextAction const getDefaultAction() override { return NextAction("raid run leader", 20.0f); }
+    std::vector<NextAction> getDefaultActions() override;
 };
 
 class RaidRunFollowStrategy : public Strategy
@@ -24,7 +24,7 @@ public:
     RaidRunFollowStrategy(PlayerbotAI* botAI) : Strategy(botAI) {}
 
     std::string const getName() override { return "raid run follow"; }
-    NextAction const getDefaultAction() override { return NextAction("raid run follow tank", 5.0f); }
+    std::vector<NextAction> getDefaultActions() override;
 };
 
 class RaidRunRegenStrategy : public Strategy

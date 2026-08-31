@@ -43,6 +43,14 @@ Player* GetLeaderTank(Player* master, RaidRunState const* state)
 
     return nullptr;
 }
+
+uint32 RegenManaThreshold(RaidRunState const* state)
+{
+    if (state && state->speedrunMode)
+        return sPlayerbotAIConfig.mediumMana;
+
+    return sPlayerbotAIConfig.raidRunManaThreshold;
+}
 }
 
 bool RaidRunGoChatAction::Execute(Event event)
@@ -298,31 +306,33 @@ bool RaidRunRegenAction::isUseful()
     if (bot->IsInCombat())
         return false;
 
+    uint32 const healthThreshold = sPlayerbotAIConfig.raidRunHealthThreshold;
+    uint32 const manaThreshold = RegenManaThreshold(state);
+
     if (bot->GetStandState() == UNIT_STAND_STATE_SIT)
-        return AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.almostFullHealth ||
-               bot->GetHealthPct() < sPlayerbotAIConfig.almostFullHealth;
+        return AI_VALUE2(uint8, "mana", "self target") < manaThreshold || bot->GetHealthPct() < healthThreshold;
 
-    if (AI_VALUE2(bool, "has mana", "self target"))
-    {
-        uint32 threshold = state->speedrunMode ? sPlayerbotAIConfig.mediumMana : sPlayerbotAIConfig.highMana;
-        if (AI_VALUE2(uint8, "mana", "self target") < threshold)
-            return true;
-    }
+    if (AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") < manaThreshold)
+        return true;
 
-    return bot->GetHealthPct() < sPlayerbotAIConfig.almostFullHealth;
+    return bot->GetHealthPct() < healthThreshold;
 }
 
 bool RaidRunRegenAction::Execute(Event event)
 {
-    if (AI_VALUE2(bool, "has mana", "self target") &&
-        AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.almostFullHealth)
+    Player* master = GetMaster();
+    RaidRunState const* state = master ? sRaidRunMgr.GetState(master) : nullptr;
+    uint32 const healthThreshold = sPlayerbotAIConfig.raidRunHealthThreshold;
+    uint32 const manaThreshold = RegenManaThreshold(state);
+
+    if (AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") < manaThreshold)
     {
         DrinkAction drink(botAI);
         if (drink.Execute(event))
             return true;
     }
 
-    if (bot->GetHealthPct() < sPlayerbotAIConfig.almostFullHealth)
+    if (bot->GetHealthPct() < healthThreshold)
     {
         EatAction food(botAI);
         return food.Execute(event);
