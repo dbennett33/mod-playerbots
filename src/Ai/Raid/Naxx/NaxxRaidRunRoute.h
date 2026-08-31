@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+class Player;
+
 struct RaidRunRouteStep
 {
     std::string name;
