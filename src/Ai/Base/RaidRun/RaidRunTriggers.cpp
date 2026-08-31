@@ -5,6 +5,7 @@
  */
 
 #include "RaidRunTriggers.h"
+#include "Playerbots.h"
 #include "RaidRunMgr.h"
 #include "RaidRunState.h"
 

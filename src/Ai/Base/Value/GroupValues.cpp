@@ -195,7 +195,7 @@ bool RaidGroupReadyValue::Calculate()
         if (bot->GetHealthPct() < healthThreshold)
             return false;
 
-        if (bot->GetStandState() == UNIT_STAND_STATE_SIT)
+        if (bot->getStandState() == UNIT_STAND_STATE_SIT)
             return false;
 
         if (bot->GetPower(POWER_MANA) && bot->GetPowerPct(POWER_MANA) < manaThreshold)
@@ -213,7 +213,7 @@ bool RaidGroupReadyValue::Calculate()
         if (ServerFacade::instance().GetDistance2d(member, anchor) > sPlayerbotAIConfig.sightDistance)
             continue;
 
-        if (member->GetStandState() == UNIT_STAND_STATE_SIT)
+        if (member->getStandState() == UNIT_STAND_STATE_SIT)
             return false;
 
         if (member->GetHealthPct() < healthThreshold)

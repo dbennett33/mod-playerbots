@@ -5,6 +5,7 @@
  */
 
 #include "RaidRunActions.h"
+#include "Playerbots.h"
 #include "AttackersValue.h"
 #include "CellImpl.h"
 #include "Creature.h"
@@ -14,8 +15,7 @@
 #include "NaxxRaidRunRoute.h"
 #include "NonCombatActions.h"
 #include "ObjectAccessor.h"
-#include "PlayerbotMgr.h"
-#include "PullActions.h"
+#include "PullStrategy.h"
 #include "RaidRunMgr.h"
 #include "RaidRunState.h"
 #include "ServerFacade.h"
@@ -63,7 +63,7 @@ bool RaidRunGoChatAction::Execute(Event event)
         return false;
 
     bool speedrun = event.getParam().find("speedrun") != std::string::npos ||
-                    event.getName().find("speedrun") != std::string::npos;
+                    event.GetSource().find("speedrun") != std::string::npos;
     RaidRunState const* existing = sRaidRunMgr.GetState(master);
     std::string message;
     if (existing && existing->phase == RAID_RUN_PAUSED)
@@ -309,7 +309,7 @@ bool RaidRunRegenAction::isUseful()
     uint32 const healthThreshold = sPlayerbotAIConfig.raidRunHealthThreshold;
     uint32 const manaThreshold = RegenManaThreshold(state);
 
-    if (bot->GetStandState() == UNIT_STAND_STATE_SIT)
+    if (bot->getStandState() == UNIT_STAND_STATE_SIT)
         return AI_VALUE2(uint8, "mana", "self target") < manaThreshold || bot->GetHealthPct() < healthThreshold;
 
     if (AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") < manaThreshold)
