@@ -115,6 +115,10 @@ public:
         targetPosRecalcDistance, farDistance, healDistance, aggroDistance;
     uint32 criticalHealth, lowHealth, mediumHealth, almostFullHealth;
     uint32 lowMana, mediumMana, highMana;
+    bool enableRaidRun;
+    uint32 raidRunHealthThreshold;
+    uint32 raidRunManaThreshold;
+    uint32 raidRunRegenTimeout;
     bool autoSaveMana;
     uint32 saveManaThreshold;
     AutoPartyBuffMode autoGreaterBlessings;

@@ -76,4 +76,12 @@ public:
     bool Calculate() override;
 };
 
+class RaidGroupReadyValue : public BoolCalculatedValue
+{
+public:
+    RaidGroupReadyValue(PlayerbotAI* botAI) : BoolCalculatedValue(botAI, "raid group ready", 2 * 1000) {}
+
+    bool Calculate() override;
+};
+
 #endif

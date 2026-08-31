@@ -430,6 +430,12 @@ AiPlayerbot.LowMana = 15
 AiPlayerbot.MediumMana = 40
 AiPlayerbot.HighMana = 65
 
+# Bot-led raid run (Naxx Arachnid wing v1)
+AiPlayerbot.EnableRaidRun = 1
+AiPlayerbot.RaidRunHealthThreshold = 85
+AiPlayerbot.RaidRunManaThreshold = 65
+AiPlayerbot.RaidRunRegenTimeout = 120
+
 #
 #
 ####################################################################################################

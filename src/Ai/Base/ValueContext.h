@@ -299,6 +299,7 @@ public:
         creators["group and"] = &ValueContext::group_and;
         creators["group or"] = &ValueContext::group_or;
         creators["group ready"] = &ValueContext::group_ready;
+        creators["raid group ready"] = &ValueContext::raid_group_ready;
 
         creators["petition signs"] = &ValueContext::petition_signs;
 
@@ -556,6 +557,7 @@ private:
     static UntypedValue* group_and(PlayerbotAI* botAI) { return new GroupBoolANDValue(botAI); }
     static UntypedValue* group_or(PlayerbotAI* botAI) { return new GroupBoolORValue(botAI); }
     static UntypedValue* group_ready(PlayerbotAI* botAI) { return new GroupReadyValue(botAI); }
+    static UntypedValue* raid_group_ready(PlayerbotAI* botAI) { return new RaidGroupReadyValue(botAI); }
 
     static UntypedValue* petition_signs(PlayerbotAI* botAI) { return new PetitionSignsValue(botAI); }
 
