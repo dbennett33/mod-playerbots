@@ -101,6 +101,14 @@ private:
     bool cachedHasWrap = false;
 };
 
+class NaxxDelayBloodlustMultiplier : public Multiplier
+{
+public:
+    NaxxDelayBloodlustMultiplier(PlayerbotAI* ai) : Multiplier(ai, "naxx delay bloodlust") {}
+
+    float GetValue(Action* action) override;
+};
+
 class FourHorsemenGenericMultiplier : public Multiplier
 {
 public:

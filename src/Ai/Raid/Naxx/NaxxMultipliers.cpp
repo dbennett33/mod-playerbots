@@ -250,7 +250,9 @@ float AnubrekhanGenericMultiplier::GetValue(Action* action)
             boss, {NaxxSpellIds::LocustSwarm10, NaxxSpellIds::LocustSwarm10Alt, NaxxSpellIds::LocustSwarm25}) ||
         botAI->HasAura("locust swarm", boss))
     {
-        if (dynamic_cast<FleeAction*>(action))
+        // Chase/flee walk back into the cloud. Tank kites via anub'rekhan position.
+        if (dynamic_cast<FleeAction*>(action) || dynamic_cast<ReachMeleeAction*>(action) ||
+            dynamic_cast<ReachSpellAction*>(action))
             return 0.0f;
     }
     return 1.0f;
@@ -284,6 +286,27 @@ float MaexxnaGenericMultiplier::GetValue(Action* action)
         return 0.0f;
 
     return 1.0f;
+}
+
+float NaxxDelayBloodlustMultiplier::GetValue(Action* action)
+{
+    if (bot->getClass() != CLASS_SHAMAN)
+        return 1.0f;
+
+    if (!dynamic_cast<CastBloodlustAction*>(action) && !dynamic_cast<CastHeroismAction*>(action))
+        return 1.0f;
+
+    Unit* boss = AI_VALUE(Unit*, "boss target");
+    if (boss && boss->IsAlive() && boss->IsInCombat())
+        return 1.0f;
+
+    Unit* current = AI_VALUE(Unit*, "current target");
+    Creature* creature = current ? current->ToCreature() : nullptr;
+    if (creature && creature->IsAlive() && creature->IsInCombat() &&
+        (creature->IsDungeonBoss() || creature->isWorldBoss()))
+        return 1.0f;
+
+    return 0.0f;
 }
 
 float FourHorsemenGenericMultiplier::GetValue(Action* action)

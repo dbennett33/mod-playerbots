@@ -16,12 +16,20 @@ namespace
 {
 constexpr float ANUB_MELEE_SPREAD_RADIUS = 9.0f;
 constexpr float ANUB_RANGED_SPREAD_RADIUS = 24.0f;
-constexpr float ANUB_LOCUST_SAFE_RADIUS = 10.0f;
+constexpr float ANUB_LOCUST_SAFE_RADIUS = 8.0f;
 constexpr float ANUB_SLOT_TOLERANCE = 3.5f;
-// Creature spawn 3308.59,-3476.29 — east end of the room, facing the west entrance.
-constexpr float ANUB_TANK_X = 3308.59f;
-constexpr float ANUB_TANK_Y = -3476.29f;
+// Anub gate is 3202.67,-3475.94 (west). Hold just inside so Locust has the full room to kite east.
+constexpr float ANUB_TANK_X = 3228.0f;
+constexpr float ANUB_TANK_Y = -3476.0f;
 constexpr float ANUB_TANK_TOLERANCE = 4.0f;
+constexpr float ANUB_LOCUST_RAID_X = 3208.0f;
+constexpr float ANUB_LOCUST_RAID_Y = -3476.0f;
+// Spawn / east wall — Locust kite destination. North/south juke once the tank arrives.
+constexpr float ANUB_LOCUST_KITE_X = 3308.59f;
+constexpr float ANUB_LOCUST_KITE_Y = -3476.29f;
+constexpr float ANUB_LOCUST_NORTH_Y = -3448.0f;
+constexpr float ANUB_LOCUST_SOUTH_Y = -3504.0f;
+constexpr float ANUB_LOCUST_ARRIVE = 8.0f;
 
 bool IsAnubLocustSwarm(Unit* boss)
 {
@@ -149,13 +157,16 @@ bool AnubrekhanPositionAction::Execute(Event /*event*/)
     bool const locust = IsAnubLocustSwarm(boss);
     if (locust && botAI->IsMainTank(bot))
     {
-        uint32 nearest = FindNearestWaypoint();
-        uint32 next_point = (nearest + 1) % intervals;
-        return MoveTo(bot->GetMapId(), waypoints[next_point].first, waypoints[next_point].second,
-                      bot->GetPositionZ(), false, false, false, false, MovementPriority::MOVEMENT_COMBAT);
+        float destX = ANUB_LOCUST_KITE_X;
+        float destY = ANUB_LOCUST_KITE_Y;
+        if (bot->GetExactDist2d(destX, destY) <= ANUB_LOCUST_ARRIVE)
+            destY = (bot->GetPositionY() < ANUB_LOCUST_KITE_Y) ? ANUB_LOCUST_NORTH_Y : ANUB_LOCUST_SOUTH_Y;
+
+        return MoveTo(bot->GetMapId(), destX, destY, bot->GetPositionZ(), false, false, false, false,
+                      MovementPriority::MOVEMENT_COMBAT);
     }
 
-    // Hold Anub at spawn (east end) so the raid can spread in the open room toward the door.
+    // Hold Anub at the west door so Locust has a full-room kite to the east spawn.
     if (!locust && botAI->IsMainTank(bot))
     {
         if (boss->GetVictim() != bot)
@@ -179,15 +190,15 @@ bool AnubrekhanPositionAction::Execute(Event /*event*/)
 
     float const twoPi = 2.0f * static_cast<float>(M_PI);
     float angle = twoPi * static_cast<float>(index) / static_cast<float>(count);
-    // Impale: spread in the open room (west of spawn), not through the east wall behind Anub.
+    // Impale: spread east into the room. Tank is at the west door; west is the wall/hallway.
     if (!locust)
     {
-        float const west = static_cast<float>(M_PI);
+        float const east = 0.0f;
         float const arc = static_cast<float>(M_PI);
         if (count == 1)
-            angle = west;
+            angle = east;
         else
-            angle = west - arc / 2.0f + arc * static_cast<float>(index) / static_cast<float>(count - 1);
+            angle = east - arc / 2.0f + arc * static_cast<float>(index) / static_cast<float>(count - 1);
     }
     float radius = ANUB_RANGED_SPREAD_RADIUS;
     if (locust)
@@ -195,9 +206,9 @@ bool AnubrekhanPositionAction::Execute(Event /*event*/)
     else if (botAI->IsMelee(bot))
         radius = std::max(ANUB_MELEE_SPREAD_RADIUS, boss->GetCombatReach() + 2.5f);
 
-    // Locust: stack loosely at room center while the tank kites. Impale: orbit the boss, melee included.
-    float const originX = locust ? center_x : boss->GetPositionX();
-    float const originY = locust ? center_y : boss->GetPositionY();
+    // Locust: stack at the gate while the tank kites east. Impale: orbit the boss, melee included.
+    float const originX = locust ? ANUB_LOCUST_RAID_X : boss->GetPositionX();
+    float const originY = locust ? ANUB_LOCUST_RAID_Y : boss->GetPositionY();
     float const destX = originX + cos(angle) * radius;
     float const destY = originY + sin(angle) * radius;
     if (bot->GetExactDist2d(destX, destY) <= ANUB_SLOT_TOLERANCE)
