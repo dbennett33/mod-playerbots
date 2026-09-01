@@ -18,8 +18,8 @@
 
 namespace
 {
-constexpr float WEB_WRAP_SCAN_RANGE = 80.0f;
-// Wraps sit on the wall at Z ~320; floor is ~292. Do not mmap-path to wrap Z.
+constexpr float WEB_WRAP_SCAN_RANGE = 100.0f;
+// Wraps sit on the north/east ledges (Z ~298-308); floor is ~292. Do not mmap-path to wrap Z.
 constexpr float WEB_WRAP_STAND_INSET = 5.0f;
 constexpr float WEB_WRAP_ARRIVE_XY = 8.0f;
 
@@ -56,7 +56,8 @@ bool IsWebWrapped(Player* bot)
     if (!bot)
         return false;
 
-    return bot->HasAura(NaxxSpellIds::WebWrapStun) || bot->HasAura(NaxxSpellIds::WebWrapSummon);
+    return bot->HasAura(NaxxSpellIds::WebWrapStun) || bot->HasAura(NaxxSpellIds::WebWrapSummon) ||
+           bot->HasAura(NaxxSpellIds::WebWrapPacify);
 }
 }  // namespace
 

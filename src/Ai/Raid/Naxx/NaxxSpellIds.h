@@ -102,6 +102,7 @@ namespace NaxxSpellIds
     static constexpr uint32 NpcWebWrap = 16486;
     static constexpr uint32 WebWrapStun = 28622;
     static constexpr uint32 WebWrapSummon = 28627;
+    static constexpr uint32 WebWrapPacify = 28618;
 
     // Anub'Rekhan
     static constexpr uint32 LocustSwarm10 = 28785;
