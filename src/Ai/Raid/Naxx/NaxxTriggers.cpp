@@ -5,6 +5,7 @@
  */
 
 #include "NaxxTriggers.h"
+#include "NaxxActions.h"
 #include "NaxxSpellIds.h"
 #include "Playerbots.h"
 #include "Timer.h"
@@ -203,6 +204,18 @@ bool MaexxnaTrigger::IsActive()
         return false;
 
     return !botAI->IsTank(bot);
+}
+
+bool MaexxnaWebWrapTrigger::IsActive()
+{
+    if (botAI->IsMainTank(bot))
+        return false;
+
+    Unit* boss = AI_VALUE2(Unit*, "find target", "maexxna");
+    if (!boss || !boss->IsAlive())
+        return false;
+
+    return HasMaexxnaWebWrap(bot);
 }
 
 //bool PatchwerkTankTrigger::IsActive()

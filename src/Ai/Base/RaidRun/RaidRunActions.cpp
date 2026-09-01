@@ -20,6 +20,7 @@
 #include "RaidRunState.h"
 #include "ServerFacade.h"
 #include <ctime>
+#include <string>
 
 namespace
 {
@@ -202,21 +203,26 @@ bool RaidRunLeaderAction::Execute(Event event)
 
     sRaidRunMgr.SyncRouteStep(master, bot);
 
-    RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(state->routeStep);
+    RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(state->wing, state->routeStep);
     if (!step)
     {
         sRaidRunMgr.StopRun(master);
-        botAI->TellMaster("Raid run complete — Arachnid wing cleared");
+        botAI->TellMaster(std::string("Raid run complete — ") + NaxxRaidRunRoute::GetWingName(state->wing)
+            + " wing cleared");
         return true;
     }
 
-    if (NaxxRaidRunRoute::IsStepComplete(bot, state->routeStep))
+    if (NaxxRaidRunRoute::IsStepComplete(bot, state->wing, state->routeStep))
     {
+        RaidRunWing const wing = state->wing;
         sRaidRunMgr.AdvanceStep(master);
         if (RaidRunState const* updated = sRaidRunMgr.GetState(master))
         {
             if (updated->phase == RAID_RUN_WING_COMPLETE)
-                botAI->TellMaster("Raid run complete — Arachnid wing cleared");
+            {
+                botAI->TellMaster(std::string("Raid run complete — ") + NaxxRaidRunRoute::GetWingName(wing)
+                    + " wing cleared");
+            }
         }
         return true;
     }

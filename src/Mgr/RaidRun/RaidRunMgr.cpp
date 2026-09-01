@@ -186,7 +186,7 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode)
             if (!tank)
                 return "No bot tank found in the group";
 
-            existing->routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank);
+            existing->routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank, existing->wing);
             existing->phase = RAID_RUN_RUNNING;
             existing->announcedRegen = false;
             existing->leaderTankGuid = tank->GetGUID();
@@ -196,8 +196,8 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode)
             std::ostringstream out;
             out << "Raid run resynced to instance — step "
                 << static_cast<uint32>(existing->routeStep + 1) << "/"
-                << static_cast<uint32>(NaxxRaidRunRoute::GetStepCount());
-            if (RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(existing->routeStep))
+                << static_cast<uint32>(NaxxRaidRunRoute::GetStepCount(existing->wing));
+            if (RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(existing->wing, existing->routeStep))
                 out << " (" << step->name << ")";
             return out.str();
         }
@@ -210,7 +210,7 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode)
     RaidRunState& state = _states[master->GetGUID()];
     state.phase = RAID_RUN_RUNNING;
     state.wing = RAID_RUN_WING_NAXX_ARACHNID;
-    state.routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank);
+    state.routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank, state.wing);
     state.leaderTankGuid = tank->GetGUID();
     state.regenBreakStarted = 0;
     state.speedrunMode = speedrunMode;
@@ -286,12 +286,13 @@ std::string RaidRunMgr::GetStatusText(Player* master) const
         default: out << "unknown"; break;
     }
 
-    if (state->wing == RAID_RUN_WING_NAXX_ARACHNID)
-        out << " — Arachnid wing";
+    if (state->wing != RAID_RUN_WING_NONE)
+        out << " — " << NaxxRaidRunRoute::GetWingName(state->wing) << " wing";
 
-    out << " — step " << static_cast<uint32>(state->routeStep + 1) << "/" << static_cast<uint32>(NaxxRaidRunRoute::GetStepCount());
+    out << " — step " << static_cast<uint32>(state->routeStep + 1) << "/"
+        << static_cast<uint32>(NaxxRaidRunRoute::GetStepCount(state->wing));
 
-    if (RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(state->routeStep))
+    if (RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(state->wing, state->routeStep))
         out << " (" << step->name << ")";
 
     return out.str();
@@ -312,7 +313,7 @@ void RaidRunMgr::AdvanceStep(Player* master)
     ++state->routeStep;
     state->announcedRegen = false;
 
-    if (state->routeStep >= NaxxRaidRunRoute::GetStepCount())
+    if (state->routeStep >= NaxxRaidRunRoute::GetStepCount(state->wing))
     {
         state->phase = RAID_RUN_WING_COMPLETE;
         RemoveRunStrategies(master);
@@ -325,7 +326,7 @@ void RaidRunMgr::SyncRouteStep(Player* master, Player* bot)
     if (!state || !bot)
         return;
 
-    uint8 const first = NaxxRaidRunRoute::FindFirstIncompleteStep(bot);
+    uint8 const first = NaxxRaidRunRoute::FindFirstIncompleteStep(bot, state->wing);
     if (first >= state->routeStep)
         return;
 
@@ -334,7 +335,7 @@ void RaidRunMgr::SyncRouteStep(Player* master, Player* bot)
     // flips travel steps incomplete and would bounce the tank between boss and door.
     for (uint8 i = first; i < state->routeStep; ++i)
     {
-        RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(i);
+        RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(state->wing, i);
         if (step && (step->bossEntry || step->clearRadius > 0.0f))
         {
             state->routeStep = first;

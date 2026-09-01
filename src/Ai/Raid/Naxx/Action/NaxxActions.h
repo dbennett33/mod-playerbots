@@ -263,6 +263,17 @@ public:
     bool Execute(Event event) override;
 };
 
+class MaexxnaChooseTargetAction : public AttackAction
+{
+public:
+    MaexxnaChooseTargetAction(PlayerbotAI* ai) : AttackAction(ai, "maexxna choose target") {}
+    bool Execute(Event event) override;
+    bool isUseful() override;
+};
+
+bool HasMaexxnaWebWrap(Player* bot);
+Unit* PickMaexxnaWebWrap(PlayerbotAI* botAI, Player* bot);
+
 class AnubrekhanPositionAction : public RotateAroundTheCenterPointAction
 {
 public:

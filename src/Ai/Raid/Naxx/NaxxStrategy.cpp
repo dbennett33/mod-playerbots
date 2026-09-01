@@ -54,7 +54,11 @@ void RaidNaxxStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         { NextAction("avoid aoe", ACTION_RAID + 1) }
     ));
 
-    // Maexxna
+    // Maexxna — web wraps (16486) use NullCreatureAI and never appear on "attackers".
+    triggers.push_back(new TriggerNode("maexxna web wrap",
+        { NextAction("maexxna choose target", ACTION_RAID + 3) }
+    ));
+
     triggers.push_back(
         new TriggerNode("maexxna",
         {
@@ -155,6 +159,7 @@ void RaidNaxxStrategy::InitMultipliers(std::vector<Multiplier*>& multipliers)
     multipliers.push_back(new InstructorRazuviousGenericMultiplier(botAI));
     multipliers.push_back(new KelthuzadGenericMultiplier(botAI));
     multipliers.push_back(new AnubrekhanGenericMultiplier(botAI));
+    multipliers.push_back(new MaexxnaGenericMultiplier(botAI));
     multipliers.push_back(new FourHorsemenGenericMultiplier(botAI));
     // multipliers.push_back(new GothikGenericMultiplier(botAI));
     multipliers.push_back(new GluthGenericMultiplier(botAI));

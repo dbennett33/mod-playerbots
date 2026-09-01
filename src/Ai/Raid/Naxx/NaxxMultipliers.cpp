@@ -24,6 +24,7 @@
 #include "ScriptedCreature.h"
 #include "ShamanActions.h"
 #include "Spell.h"
+#include "Timer.h"
 #include "UseMeetingStoneAction.h"
 #include "WarriorActions.h"
 
@@ -252,6 +253,36 @@ float AnubrekhanGenericMultiplier::GetValue(Action* action)
         if (dynamic_cast<FleeAction*>(action))
             return 0.0f;
     }
+    return 1.0f;
+}
+
+float MaexxnaGenericMultiplier::GetValue(Action* action)
+{
+    if (botAI->IsMainTank(bot))
+        return 1.0f;
+
+    uint32 const now = getMSTime();
+    if (!lastWrapCheckMs || getMSTimeDiff(lastWrapCheckMs, now) > 400)
+    {
+        lastWrapCheckMs = now;
+        cachedHasWrap = HasMaexxnaWebWrap(bot);
+    }
+
+    if (!cachedHasWrap)
+        return 1.0f;
+
+    Unit* boss = AI_VALUE2(Unit*, "find target", "maexxna");
+    if (!boss)
+        return 1.0f;
+
+    // Wraps are ~29yd up the wall. Chase/formation/rear-flank pull bots off the cocoons
+    // or try to mmap-path to Z=320.
+    if (dynamic_cast<FollowAction*>(action) || dynamic_cast<CombatFormationMoveAction*>(action) ||
+        dynamic_cast<RearFlankAction*>(action) || dynamic_cast<DpsAssistAction*>(action) ||
+        dynamic_cast<TankAssistAction*>(action) || dynamic_cast<ReachMeleeAction*>(action) ||
+        dynamic_cast<ReachSpellAction*>(action) || dynamic_cast<PetAttackAction*>(action))
+        return 0.0f;
+
     return 1.0f;
 }
 

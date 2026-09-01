@@ -54,20 +54,71 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
     { "Maexxna", 3511.38f, -3921.58f, 299.51f, 533, 15952, 10.0f, 40.0f }
 };
 
+// Construct quarter is north of the hub. Do not waypoint hub center 3005,-3434,304.
+// Order is Patchwerk (hallway) -> Grobbulus (upper lab, gate 3318,-3254) -> Gluth -> Thaddius.
+// Grobbulus sits at Z 311; the Patchwerk floor is Z 294 — mmap the ramp, do not skip Z.
+std::vector<RaidRunRouteStep> const constructSteps =
+{
+    { "Construct entrance", 3070.0f, -3365.0f, 298.40f, 533, 0, 12.0f, 0.0f },
+    { "Construct hall golems", 3137.0f, -3353.0f, 294.05f, 533, 0, 10.0f, 0.0f, 20.0f },
+    { "Construct hall giants", 3164.0f, -3276.0f, 294.90f, 533, 0, 10.0f, 0.0f, 22.0f },
+    { "Patchwerk slimes", 3140.0f, -3212.0f, 294.15f, 533, 0, 10.0f, 0.0f, 28.0f },
+    { "Patchwerk", 3256.36f, -3230.33f, 294.06f, 533, 16028, 12.0f, 45.0f, 45.0f },
+    { "Patchwerk gate", 3318.0f, -3254.0f, 293.35f, 533, 0, 12.0f, 0.0f },
+    { "Grobbulus ramp", 3295.0f, -3285.0f, 300.00f, 533, 0, 12.0f, 0.0f },
+    { "Grobbulus", 3227.58f, -3378.30f, 311.33f, 533, 15931, 12.0f, 45.0f, 40.0f },
+    { "Gluth hall", 3285.0f, -3200.0f, 294.15f, 533, 0, 12.0f, 0.0f },
+    { "Gluth", 3283.09f, -3156.96f, 297.79f, 533, 15932, 12.0f, 45.0f, 35.0f },
+    { "Gluth gate", 3339.16f, -3100.64f, 296.81f, 533, 0, 12.0f, 0.0f },
+    { "Thaddius gate", 3421.86f, -3017.51f, 295.62f, 533, 0, 12.0f, 0.0f },
+    { "Thaddius", 3513.84f, -2926.55f, 302.91f, 533, 15928, 15.0f, 80.0f, 0.0f }
+};
+
+std::vector<RaidRunRouteStep> const emptySteps;
+
 // Must match NaxxramasEncouter in naxxramas.h.
+constexpr uint32 NPC_PATCHWERK = 16028;
+constexpr uint32 NPC_GROBBULUS = 15931;
+constexpr uint32 NPC_GLUTH = 15932;
+constexpr uint32 NPC_THADDIUS = 15928;
+constexpr uint32 NPC_STALAGG = 15929;
+constexpr uint32 NPC_FEUGEN = 15930;
 constexpr uint32 NPC_ANUBREKHAN = 15956;
 constexpr uint32 NPC_FAERLINA = 15953;
 constexpr uint32 NPC_MAEXXNA = 15952;
 constexpr uint32 NPC_NAXXRAMAS_FOLLOWER = 16505;
 constexpr uint32 NPC_NAXXRAMAS_WORSHIPPER = 16506;
+constexpr uint32 NPC_NAXXRAMAS_CULTIST = 15980;
+constexpr uint32 NPC_NAXXRAMAS_ACOLYTE = 15981;
+constexpr uint32 NPC_PATCHWORK_GOLEM = 16017;
+constexpr uint32 NPC_BILE_RETCHER = 16018;
+constexpr uint32 NPC_MAD_SCIENTIST = 16020;
+constexpr uint32 NPC_LIVING_MONSTROSITY = 16021;
+constexpr uint32 NPC_SURGICAL_ASSIST = 16022;
+constexpr uint32 NPC_EMBALMING_SLIME = 16024;
+constexpr uint32 NPC_STITCHED_GIANT = 16025;
+constexpr uint32 NPC_SLUDGE_BELCHER = 16029;
+constexpr uint32 NAXX_BOSS_PATCHWERK = 0;
+constexpr uint32 NAXX_BOSS_GROBBULUS = 1;
+constexpr uint32 NAXX_BOSS_GLUTH = 2;
 constexpr uint32 NAXX_BOSS_ANUB = 6;
 constexpr uint32 NAXX_BOSS_FAERLINA = 7;
 constexpr uint32 NAXX_BOSS_MAEXXNA = 8;
+constexpr uint32 NAXX_BOSS_THADDIUS = 9;
 
 bool EncounterIdForBoss(uint32 bossEntry, uint32& encounterId)
 {
     switch (bossEntry)
     {
+        case NPC_PATCHWERK:
+            encounterId = NAXX_BOSS_PATCHWERK;
+            return true;
+        case NPC_GROBBULUS:
+            encounterId = NAXX_BOSS_GROBBULUS;
+            return true;
+        case NPC_GLUTH:
+            encounterId = NAXX_BOSS_GLUTH;
+            return true;
         case NPC_ANUBREKHAN:
             encounterId = NAXX_BOSS_ANUB;
             return true;
@@ -77,39 +128,58 @@ bool EncounterIdForBoss(uint32 bossEntry, uint32& encounterId)
         case NPC_MAEXXNA:
             encounterId = NAXX_BOSS_MAEXXNA;
             return true;
+        case NPC_THADDIUS:
+            encounterId = NAXX_BOSS_THADDIUS;
+            return true;
         default:
             return false;
     }
 }
 
-RaidRunRouteStep const* NextBossStep(uint8 index)
+std::vector<RaidRunRouteStep> const& StepsFor(RaidRunWing wing)
 {
-    for (uint8 i = index + 1; i < arachnidSteps.size(); ++i)
+    switch (wing)
     {
-        if (arachnidSteps[i].bossEntry)
-            return &arachnidSteps[i];
+        case RAID_RUN_WING_NAXX_ARACHNID:
+            return arachnidSteps;
+        case RAID_RUN_WING_NAXX_CONSTRUCT:
+            return constructSteps;
+        default:
+            return emptySteps;
+    }
+}
+
+RaidRunRouteStep const* NextBossStep(std::vector<RaidRunRouteStep> const& steps, uint8 index)
+{
+    for (uint8 i = index + 1; i < steps.size(); ++i)
+    {
+        if (steps[i].bossEntry)
+            return &steps[i];
     }
 
     return nullptr;
 }
 
-bool IsTravelStepPassed(Player* bot, uint8 index)
+bool IsTravelStepPassed(Player* bot, std::vector<RaidRunRouteStep> const& steps, uint8 index)
 {
-    RaidRunRouteStep const* step = &arachnidSteps[index];
-    RaidRunRouteStep const* nextBoss = NextBossStep(index);
+    if (index >= steps.size())
+        return true;
+
+    RaidRunRouteStep const* step = &steps[index];
+    RaidRunRouteStep const* nextBoss = NextBossStep(steps, index);
     if (!nextBoss)
         return false;
 
     if (NaxxRaidRunRoute::IsBossEncounterDone(bot, nextBoss->bossEntry))
         return true;
 
-    // Trash-clear pins must be walked. "Closer to next boss" would skip packs and pull her.
+    // Trash-clear pins must be walked. "Closer to next boss" would skip packs.
     if (step->clearRadius > 0.0f)
         return false;
 
-    for (uint8 i = index + 1; i < arachnidSteps.size(); ++i)
+    for (uint8 i = index + 1; i < steps.size(); ++i)
     {
-        RaidRunRouteStep const& later = arachnidSteps[i];
+        RaidRunRouteStep const& later = steps[i];
         if (ServerFacade::instance().IsDistanceLessOrEqualThan(
                 ServerFacade::instance().GetDistance2d(bot, later.x, later.y), later.arriveDistance))
             return true;
@@ -122,12 +192,26 @@ bool IsTravelStepPassed(Player* bot, uint8 index)
 
 bool IsRouteBossEntry(uint32 entry)
 {
-    return entry == NPC_ANUBREKHAN || entry == NPC_FAERLINA || entry == NPC_MAEXXNA;
+    return entry == NPC_PATCHWERK || entry == NPC_GROBBULUS || entry == NPC_GLUTH || entry == NPC_THADDIUS
+        || entry == NPC_ANUBREKHAN || entry == NPC_FAERLINA || entry == NPC_MAEXXNA
+        || entry == NPC_STALAGG || entry == NPC_FEUGEN;
 }
 
-bool IsFaerlinaEncounterAdd(uint32 entry)
+bool IsEncounterAdd(uint32 entry)
 {
     return entry == NPC_NAXXRAMAS_WORSHIPPER || entry == NPC_NAXXRAMAS_FOLLOWER;
+}
+
+bool IsArachnidTrash(uint32 entry)
+{
+    return entry == NPC_NAXXRAMAS_CULTIST || entry == NPC_NAXXRAMAS_ACOLYTE;
+}
+
+bool IsConstructTrash(uint32 entry)
+{
+    return entry == NPC_PATCHWORK_GOLEM || entry == NPC_BILE_RETCHER || entry == NPC_MAD_SCIENTIST
+        || entry == NPC_LIVING_MONSTROSITY || entry == NPC_SURGICAL_ASSIST || entry == NPC_EMBALMING_SLIME
+        || entry == NPC_STITCHED_GIANT || entry == NPC_SLUDGE_BELCHER;
 }
 
 bool IsClearableTrash(Creature* creature, Player* bot, uint32 skipBossEntry)
@@ -136,7 +220,10 @@ bool IsClearableTrash(Creature* creature, Player* bot, uint32 skipBossEntry)
         return false;
 
     uint32 const entry = creature->GetEntry();
-    if (IsRouteBossEntry(entry) || entry == skipBossEntry || IsFaerlinaEncounterAdd(entry))
+    if (!IsArachnidTrash(entry) && !IsConstructTrash(entry))
+        return false;
+
+    if (IsRouteBossEntry(entry) || entry == skipBossEntry || IsEncounterAdd(entry))
         return false;
 
     if (creature->IsCritter() || creature->IsTotem() || creature->IsPet() || creature->IsSummon())
@@ -149,22 +236,54 @@ bool IsClearableTrash(Creature* creature, Player* bot, uint32 skipBossEntry)
 }
 }  // namespace
 
+std::vector<RaidRunRouteStep> const& NaxxRaidRunRoute::GetSteps(RaidRunWing wing)
+{
+    return StepsFor(wing == RAID_RUN_WING_NONE ? RAID_RUN_WING_NAXX_ARACHNID : wing);
+}
+
 std::vector<RaidRunRouteStep> const& NaxxRaidRunRoute::GetArachnidSteps()
 {
     return arachnidSteps;
 }
 
-uint8 NaxxRaidRunRoute::GetStepCount()
+uint8 NaxxRaidRunRoute::GetStepCount(RaidRunWing wing)
 {
-    return static_cast<uint8>(arachnidSteps.size());
+    return static_cast<uint8>(GetSteps(wing).size());
 }
 
-RaidRunRouteStep const* NaxxRaidRunRoute::GetStep(uint8 index)
+RaidRunRouteStep const* NaxxRaidRunRoute::GetStep(RaidRunWing wing, uint8 index)
 {
-    if (index >= arachnidSteps.size())
+    std::vector<RaidRunRouteStep> const& steps = GetSteps(wing);
+    if (index >= steps.size())
         return nullptr;
 
-    return &arachnidSteps[index];
+    return &steps[index];
+}
+
+char const* NaxxRaidRunRoute::GetWingName(RaidRunWing wing)
+{
+    switch (wing)
+    {
+        case RAID_RUN_WING_NAXX_ARACHNID:
+            return "Arachnid";
+        case RAID_RUN_WING_NAXX_CONSTRUCT:
+            return "Construct";
+        default:
+            return "Unknown";
+    }
+}
+
+RaidRunWing NaxxRaidRunRoute::SuggestWing(Player* bot)
+{
+    if (!IsWingComplete(bot, RAID_RUN_WING_NAXX_ARACHNID))
+        return RAID_RUN_WING_NAXX_ARACHNID;
+
+    return RAID_RUN_WING_NAXX_CONSTRUCT;
+}
+
+bool NaxxRaidRunRoute::IsWingComplete(Player* bot, RaidRunWing wing)
+{
+    return FindFirstIncompleteStep(bot, wing) >= GetStepCount(wing);
 }
 
 bool NaxxRaidRunRoute::IsBossAlive(Player* bot, uint32 bossEntry, float range)
@@ -251,12 +370,13 @@ Creature* NaxxRaidRunRoute::FindClearableTrash(Player* bot, RaidRunRouteStep con
     return best;
 }
 
-bool NaxxRaidRunRoute::IsStepComplete(Player* bot, uint8 index)
+bool NaxxRaidRunRoute::IsStepComplete(Player* bot, RaidRunWing wing, uint8 index)
 {
-    if (!bot || index >= arachnidSteps.size())
+    std::vector<RaidRunRouteStep> const& steps = GetSteps(wing);
+    if (!bot || index >= steps.size())
         return true;
 
-    RaidRunRouteStep const& step = arachnidSteps[index];
+    RaidRunRouteStep const& step = steps[index];
     if (step.bossEntry)
     {
         if (!IsBossEncounterDone(bot, step.bossEntry))
@@ -267,12 +387,10 @@ bool NaxxRaidRunRoute::IsStepComplete(Player* bot, uint8 index)
 
     if (step.clearRadius > 0.0f)
     {
-        if (IsTravelStepPassed(bot, index))
+        // Pack is dead: leave the pin. Requiring arriveDistance rewinds to the last
+        // pack and loops east-west along Faerlina's south wall.
+        if (IsTravelStepPassed(bot, steps, index))
             return true;
-
-        if (!ServerFacade::instance().IsDistanceLessOrEqualThan(
-                ServerFacade::instance().GetDistance2d(bot, step.x, step.y), step.arriveDistance))
-            return false;
 
         return FindClearableTrash(bot, step) == nullptr;
     }
@@ -281,18 +399,18 @@ bool NaxxRaidRunRoute::IsStepComplete(Player* bot, uint8 index)
             ServerFacade::instance().GetDistance2d(bot, step.x, step.y), step.arriveDistance))
         return true;
 
-    return IsTravelStepPassed(bot, index);
+    return IsTravelStepPassed(bot, steps, index);
 }
 
-uint8 NaxxRaidRunRoute::FindFirstIncompleteStep(Player* bot)
+uint8 NaxxRaidRunRoute::FindFirstIncompleteStep(Player* bot, RaidRunWing wing)
 {
-    uint8 const count = GetStepCount();
+    uint8 const count = GetStepCount(wing);
     if (!bot)
         return 0;
 
     for (uint8 i = 0; i < count; ++i)
     {
-        if (!IsStepComplete(bot, i))
+        if (!IsStepComplete(bot, wing, i))
             return i;
     }
 

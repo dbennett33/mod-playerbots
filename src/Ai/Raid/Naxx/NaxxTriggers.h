@@ -129,6 +129,13 @@ public:
     bool IsActive() override;
 };
 
+class MaexxnaWebWrapTrigger : public Trigger
+{
+public:
+    MaexxnaWebWrapTrigger(PlayerbotAI* ai) : Trigger(ai, "maexxna web wrap") {}
+    bool IsActive() override;
+};
+
 //class PatchwerkTankTrigger : public Trigger
 //{
 //public:

@@ -31,13 +31,17 @@ struct RaidRunRouteStep
 class NaxxRaidRunRoute
 {
 public:
+    static std::vector<RaidRunRouteStep> const& GetSteps(RaidRunWing wing);
     static std::vector<RaidRunRouteStep> const& GetArachnidSteps();
-    static uint8 GetStepCount();
-    static RaidRunRouteStep const* GetStep(uint8 index);
+    static uint8 GetStepCount(RaidRunWing wing);
+    static RaidRunRouteStep const* GetStep(RaidRunWing wing, uint8 index);
+    static char const* GetWingName(RaidRunWing wing);
+    static RaidRunWing SuggestWing(Player* bot);
+    static bool IsWingComplete(Player* bot, RaidRunWing wing);
     static bool IsBossAlive(Player* bot, uint32 bossEntry, float range = 250.0f);
     static bool IsBossEncounterDone(Player* bot, uint32 bossEntry);
-    static bool IsStepComplete(Player* bot, uint8 index);
-    static uint8 FindFirstIncompleteStep(Player* bot);
+    static bool IsStepComplete(Player* bot, RaidRunWing wing, uint8 index);
+    static uint8 FindFirstIncompleteStep(Player* bot, RaidRunWing wing);
     static Creature* FindClearableTrash(Player* bot, RaidRunRouteStep const& step);
 };
 

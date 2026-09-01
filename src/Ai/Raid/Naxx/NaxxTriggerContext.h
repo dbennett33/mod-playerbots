@@ -41,6 +41,7 @@ public:
         creators["anub'rekhan"] = &RaidNaxxTriggerContext::anubrekhan;
         creators["faerlina"] = &RaidNaxxTriggerContext::faerlina;
         creators["maexxna"] = &RaidNaxxTriggerContext::maexxna;
+        creators["maexxna web wrap"] = &RaidNaxxTriggerContext::maexxna_web_wrap;
         //creators["patchwerk tank"] = &RaidNaxxTriggerContext::patchwerk_tank;
         //creators["patchwerk non-tank"] = &RaidNaxxTriggerContext::patchwerk_non_tank;
         //creators["patchwerk ranged"] = &RaidNaxxTriggerContext::patchwerk_ranged;
@@ -75,6 +76,7 @@ private:
     static Trigger* anubrekhan(PlayerbotAI* ai) { return new AnubrekhanTrigger(ai); }
     static Trigger* faerlina(PlayerbotAI* ai) { return new FaerlinaTrigger(ai); }
     static Trigger* maexxna(PlayerbotAI* ai) { return new MaexxnaTrigger(ai); }
+    static Trigger* maexxna_web_wrap(PlayerbotAI* ai) { return new MaexxnaWebWrapTrigger(ai); }
     //static Trigger* patchwerk_tank(PlayerbotAI* ai) { return new PatchwerkTankTrigger(ai); }
     //static Trigger* patchwerk_non_tank(PlayerbotAI* ai) { return new PatchwerkNonTankTrigger(ai); }
     //static Trigger* patchwerk_ranged(PlayerbotAI* ai) { return new PatchwerkRangedTrigger(ai); }

@@ -98,6 +98,11 @@ namespace NaxxSpellIds
     SPELL_INFECTED_WOUND                = 29306,
     SPELL_CHOW_SEARCHER                 = 28404
 */
+    // Maexxna
+    static constexpr uint32 NpcWebWrap = 16486;
+    static constexpr uint32 WebWrapStun = 28622;
+    static constexpr uint32 WebWrapSummon = 28627;
+
     // Anub'Rekhan
     static constexpr uint32 LocustSwarm10 = 28785;
     static constexpr uint32 LocustSwarm10Alt = 28786;
