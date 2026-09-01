@@ -13,6 +13,7 @@
 #include <vector>
 
 class Creature;
+class GameObject;
 class Player;
 
 struct RaidRunRouteStep
@@ -26,6 +27,7 @@ struct RaidRunRouteStep
     float arriveDistance;
     float pullRadius;
     float clearRadius = 0.0f;
+    uint32 portalGoEntry = 0;
 };
 
 class NaxxRaidRunRoute
@@ -37,6 +39,9 @@ public:
     static RaidRunRouteStep const* GetStep(RaidRunWing wing, uint8 index);
     static char const* GetWingName(RaidRunWing wing);
     static RaidRunWing SuggestWing(Player* bot);
+    static bool IsAtNaxxHub(Player* bot);
+    static bool NeedsHubPortal(Player* bot);
+    static GameObject* FindWingReturnPortal(Player* bot, float range = 120.0f);
     static bool IsWingComplete(Player* bot, RaidRunWing wing);
     static bool IsBossAlive(Player* bot, uint32 bossEntry, float range = 250.0f);
     static bool IsBossEncounterDone(Player* bot, uint32 bossEntry);

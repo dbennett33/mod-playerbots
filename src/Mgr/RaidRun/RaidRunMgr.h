@@ -28,7 +28,7 @@ public:
     RaidRunState* GetState(Player* master);
     RaidRunState const* GetState(Player const* master) const;
 
-    std::string StartRun(Player* master, bool speedrunMode = false);
+    std::string StartRun(Player* master, bool speedrunMode = false, RaidRunWing wing = RAID_RUN_WING_NONE);
     std::string PauseRun(Player* master);
     std::string ResumeRun(Player* master);
     std::string StopRun(Player* master);

@@ -10,6 +10,7 @@
 #include "CellImpl.h"
 #include "Creature.h"
 #include "Event.h"
+#include "GameObject.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "NaxxRaidRunRoute.h"
@@ -19,6 +20,7 @@
 #include "RaidRunMgr.h"
 #include "RaidRunState.h"
 #include "ServerFacade.h"
+#include "WorldPacket.h"
 #include <ctime>
 #include <string>
 
@@ -52,6 +54,16 @@ uint32 RegenManaThreshold(RaidRunState const* state)
 
     return sPlayerbotAIConfig.raidRunManaThreshold;
 }
+
+void UseGameObjectPacket(Player* bot, GameObject* go)
+{
+    if (!bot || !go || !bot->GetSession())
+        return;
+
+    WorldPacket data(CMSG_GAMEOBJ_USE);
+    data << go->GetGUID();
+    bot->GetSession()->HandleGameObjectUseOpcode(data);
+}
 }
 
 bool RaidRunGoChatAction::Execute(Event event)
@@ -65,12 +77,15 @@ bool RaidRunGoChatAction::Execute(Event event)
 
     bool speedrun = event.getParam().find("speedrun") != std::string::npos ||
                     event.GetSource().find("speedrun") != std::string::npos;
+    RaidRunWing wing = RAID_RUN_WING_NONE;
+    if (event.getParam().find("construct") != std::string::npos)
+        wing = RAID_RUN_WING_NAXX_CONSTRUCT;
     RaidRunState const* existing = sRaidRunMgr.GetState(master);
     std::string message;
     if (existing && existing->phase == RAID_RUN_PAUSED)
         message = sRaidRunMgr.ResumeRun(master);
     else
-        message = sRaidRunMgr.StartRun(master, speedrun);
+        message = sRaidRunMgr.StartRun(master, speedrun, wing);
     botAI->TellMaster(message);
     return true;
 }
@@ -188,6 +203,19 @@ bool RaidRunLeaderAction::PullTarget(Creature* target, Event event)
     return botAI->DoSpecificAction("pull start", event, true);
 }
 
+bool RaidRunLeaderAction::UseNaxxPortal(uint32 goEntry, float x, float y, float z)
+{
+    GameObject* go = bot->FindNearestGameObject(goEntry, 120.0f);
+    if (!go)
+        return MoveTo(533, x, y, z, false, false);
+
+    if (!go->IsAtInteractDistance(bot))
+        return MoveTo(go, std::max(go->GetInteractionDistance() - 1.0f, 0.0f));
+
+    UseGameObjectPacket(bot, go);
+    return true;
+}
+
 bool RaidRunLeaderAction::Execute(Event event)
 {
     Player* master = GetMaster();
@@ -214,14 +242,24 @@ bool RaidRunLeaderAction::Execute(Event event)
 
     if (NaxxRaidRunRoute::IsStepComplete(bot, state->wing, state->routeStep))
     {
-        RaidRunWing const wing = state->wing;
+        RaidRunWing const prevWing = state->wing;
         sRaidRunMgr.AdvanceStep(master);
         if (RaidRunState const* updated = sRaidRunMgr.GetState(master))
         {
             if (updated->phase == RAID_RUN_WING_COMPLETE)
             {
-                botAI->TellMaster(std::string("Raid run complete — ") + NaxxRaidRunRoute::GetWingName(wing)
+                botAI->TellMaster(std::string("Raid run complete — ") + NaxxRaidRunRoute::GetWingName(prevWing)
                     + " wing cleared");
+            }
+            else if (updated->wing != prevWing)
+            {
+                botAI->TellMaster(std::string("Arachnid cleared — starting ")
+                    + NaxxRaidRunRoute::GetWingName(updated->wing) + " wing");
+            }
+            else if (RaidRunRouteStep const* next = NaxxRaidRunRoute::GetStep(updated->wing, updated->routeStep))
+            {
+                if (next->portalGoEntry)
+                    botAI->TellMaster("Heading to the wing portal");
             }
         }
         return true;
@@ -262,6 +300,9 @@ bool RaidRunLeaderAction::Execute(Event event)
 
     if (Creature* trash = NaxxRaidRunRoute::FindClearableTrash(bot, *step))
         return PullTarget(trash, event);
+
+    if (step->portalGoEntry)
+        return UseNaxxPortal(step->portalGoEntry, step->x, step->y, step->z);
 
     float distance = ServerFacade::instance().GetDistance2d(bot, step->x, step->y);
     if (distance > step->arriveDistance)
@@ -311,6 +352,19 @@ bool RaidRunFollowTankAction::Execute(Event /*event*/)
 
     if (botAI->HasStrategy("stay", BOT_STATE_NON_COMBAT))
         return false;
+
+    if (!NaxxRaidRunRoute::IsAtNaxxHub(bot) && bot->GetExactDist2d(tank) > 120.0f)
+    {
+        GameObject* portal = NaxxRaidRunRoute::FindWingReturnPortal(bot, 150.0f);
+        if (portal)
+        {
+            if (!portal->IsAtInteractDistance(bot))
+                return MoveTo(portal, std::max(portal->GetInteractionDistance() - 1.0f, 0.0f));
+
+            UseGameObjectPacket(bot, portal);
+            return true;
+        }
+    }
 
     float const maxDistance = std::max(sPlayerbotAIConfig.followDistance, 8.0f);
     return Follow(tank, maxDistance);

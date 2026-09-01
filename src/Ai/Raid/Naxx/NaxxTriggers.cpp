@@ -208,7 +208,7 @@ bool MaexxnaTrigger::IsActive()
 
 bool MaexxnaWebWrapTrigger::IsActive()
 {
-    if (botAI->IsMainTank(bot))
+    if (botAI->IsMainTank(bot) || !botAI->IsRanged(bot))
         return false;
 
     Unit* boss = AI_VALUE2(Unit*, "find target", "maexxna");

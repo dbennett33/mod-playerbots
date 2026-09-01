@@ -260,7 +260,8 @@ float AnubrekhanGenericMultiplier::GetValue(Action* action)
 
 float MaexxnaGenericMultiplier::GetValue(Action* action)
 {
-    if (botAI->IsMainTank(bot))
+    // Melee stay on Maexxna. Only ranged swap to cocoons.
+    if (botAI->IsMainTank(bot) || !botAI->IsRanged(bot))
         return 1.0f;
 
     uint32 const now = getMSTime();

@@ -13,15 +13,11 @@
 #include "NaxxSpellIds.h"
 #include "Playerbots.h"
 #include <algorithm>
-#include <cmath>
 #include <vector>
 
 namespace
 {
 constexpr float WEB_WRAP_SCAN_RANGE = 100.0f;
-// Wraps sit on the north/east ledges (Z ~298-308); floor is ~292. Do not mmap-path to wrap Z.
-constexpr float WEB_WRAP_STAND_INSET = 5.0f;
-constexpr float WEB_WRAP_ARRIVE_XY = 8.0f;
 
 void CollectMaexxnaWebWraps(Player* bot, std::vector<Unit*>& out)
 {
@@ -91,7 +87,7 @@ Unit* PickMaexxnaWebWrap(PlayerbotAI* botAI, Player* bot)
         Player* member = ref->GetSource();
         if (!member || !member->IsAlive() || member->GetMapId() != bot->GetMapId())
             continue;
-        if (botAI->IsMainTank(member))
+        if (botAI->IsMainTank(member) || !botAI->IsRanged(member))
             continue;
 
         members.push_back(member);
@@ -115,7 +111,7 @@ Unit* PickMaexxnaWebWrap(PlayerbotAI* botAI, Player* bot)
 
 bool MaexxnaChooseTargetAction::isUseful()
 {
-    if (botAI->IsMainTank(bot) || IsWebWrapped(bot))
+    if (botAI->IsMainTank(bot) || !botAI->IsRanged(bot) || IsWebWrapped(bot))
         return false;
 
     return PickMaexxnaWebWrap(botAI, bot) != nullptr;
@@ -123,30 +119,12 @@ bool MaexxnaChooseTargetAction::isUseful()
 
 bool MaexxnaChooseTargetAction::Execute(Event /*event*/)
 {
-    if (botAI->IsMainTank(bot) || IsWebWrapped(bot))
+    if (botAI->IsMainTank(bot) || !botAI->IsRanged(bot) || IsWebWrapped(bot))
         return false;
 
     Unit* wrap = PickMaexxnaWebWrap(botAI, bot);
     if (!wrap)
         return false;
-
-    float destX = wrap->GetPositionX();
-    float destY = wrap->GetPositionY();
-    float const dx = bot->GetPositionX() - destX;
-    float const dy = bot->GetPositionY() - destY;
-    float const len = std::hypot(dx, dy);
-    if (len > 1.0f)
-    {
-        destX += dx / len * WEB_WRAP_STAND_INSET;
-        destY += dy / len * WEB_WRAP_STAND_INSET;
-    }
-
-    if (bot->GetExactDist2d(destX, destY) > WEB_WRAP_ARRIVE_XY)
-    {
-        if (MoveTo(bot->GetMapId(), destX, destY, bot->GetPositionZ(), false, false, false, false,
-                   MovementPriority::MOVEMENT_COMBAT))
-            return true;
-    }
 
     if (context->GetValue<Unit*>("current target")->Get() == wrap)
         return false;

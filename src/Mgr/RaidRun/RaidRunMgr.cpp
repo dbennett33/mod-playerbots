@@ -160,7 +160,7 @@ void RaidRunMgr::RemoveRunStrategies(Player* master)
         });
 }
 
-std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode)
+std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode, RaidRunWing requestedWing)
 {
     if (!sPlayerbotAIConfig.enableRaidRun)
         return "Raid run is disabled in playerbots.conf";
@@ -175,7 +175,7 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode)
         return "You must be in a group to start a raid run";
 
     RaidRunState* existing = GetState(master);
-    if (existing && existing->phase != RAID_RUN_IDLE)
+    if (existing && existing->phase != RAID_RUN_IDLE && existing->phase != RAID_RUN_WING_COMPLETE)
     {
         if (existing->phase == RAID_RUN_PAUSED)
             return ResumeRun(master);
@@ -207,10 +207,24 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode)
     if (!tank)
         return "No bot tank found in the group";
 
+    RaidRunWing wing = requestedWing;
+    uint8 routeStep = 0;
+    if (wing == RAID_RUN_WING_NONE)
+        wing = NaxxRaidRunRoute::SuggestWing(tank);
+
+    if (NaxxRaidRunRoute::NeedsHubPortal(tank))
+    {
+        wing = RAID_RUN_WING_NAXX_ARACHNID;
+        uint8 const count = NaxxRaidRunRoute::GetStepCount(wing);
+        routeStep = count ? static_cast<uint8>(count - 1) : 0;
+    }
+    else
+        routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank, wing);
+
     RaidRunState& state = _states[master->GetGUID()];
     state.phase = RAID_RUN_RUNNING;
-    state.wing = RAID_RUN_WING_NAXX_ARACHNID;
-    state.routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank, state.wing);
+    state.wing = wing;
+    state.routeStep = routeStep;
     state.leaderTankGuid = tank->GetGUID();
     state.regenBreakStarted = 0;
     state.speedrunMode = speedrunMode;
@@ -220,7 +234,8 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode)
     ApplyRunStrategies(master);
 
     std::ostringstream out;
-    out << "Raid run started — Arachnid wing — " << tank->GetName() << " is leading";
+    out << "Raid run started — " << NaxxRaidRunRoute::GetWingName(state.wing) << " wing — " << tank->GetName()
+        << " is leading";
     if (speedrunMode)
         out << " (speedrun mode)";
     return out.str();
@@ -315,6 +330,18 @@ void RaidRunMgr::AdvanceStep(Player* master)
 
     if (state->routeStep >= NaxxRaidRunRoute::GetStepCount(state->wing))
     {
+        Player* tank = FindLeaderTank(master);
+        RaidRunWing const next = tank ? NaxxRaidRunRoute::SuggestWing(tank) : RAID_RUN_WING_NONE;
+        if (tank && next != state->wing && next != RAID_RUN_WING_NONE &&
+            !NaxxRaidRunRoute::IsWingComplete(tank, next))
+        {
+            state->wing = next;
+            state->routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank, next);
+            state->phase = RAID_RUN_RUNNING;
+            state->announcedRegen = false;
+            return;
+        }
+
         state->phase = RAID_RUN_WING_COMPLETE;
         RemoveRunStrategies(master);
     }

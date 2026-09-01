@@ -8,6 +8,7 @@
 #include "AttackersValue.h"
 #include "CellImpl.h"
 #include "Creature.h"
+#include "GameObject.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "InstanceScript.h"
@@ -51,7 +52,9 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
     { "Maexxna south ramp", 3224.0f, -3877.0f, 284.56f, 533, 0, 12.0f, 0.0f },
     { "Maexxna south hall", 3310.0f, -3880.0f, 294.66f, 533, 0, 12.0f, 0.0f },
     { "Maexxna gate", 3410.0f, -3824.0f, 294.75f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna", 3511.38f, -3921.58f, 299.51f, 533, 15952, 10.0f, 40.0f }
+    { "Maexxna", 3511.38f, -3921.58f, 299.51f, 533, 15952, 10.0f, 40.0f },
+    // GO 181575 casts 28444 to hub 3005.51,-3434.64,304. Do not walk the wing backwards.
+    { "Maexxna portal", 3465.16f, -3940.45f, 308.79f, 533, 0, 8.0f, 0.0f, 0.0f, 181575 }
 };
 
 // Construct quarter is north of the hub. Do not waypoint hub center 3005,-3434,304.
@@ -105,6 +108,13 @@ constexpr uint32 NAXX_BOSS_ANUB = 6;
 constexpr uint32 NAXX_BOSS_FAERLINA = 7;
 constexpr uint32 NAXX_BOSS_MAEXXNA = 8;
 constexpr uint32 NAXX_BOSS_THADDIUS = 9;
+constexpr uint32 GO_MAEXXNA_PORTAL = 181575;
+constexpr uint32 GO_THADDIUS_PORTAL = 181576;
+constexpr uint32 GO_LOATHEB_PORTAL = 181577;
+constexpr uint32 GO_HORSEMAN_PORTAL = 181578;
+constexpr float NAXX_HUB_X = 3005.51f;
+constexpr float NAXX_HUB_Y = -3434.64f;
+constexpr float NAXX_HUB_RADIUS = 50.0f;
 
 bool EncounterIdForBoss(uint32 bossEntry, uint32& encounterId)
 {
@@ -281,6 +291,44 @@ RaidRunWing NaxxRaidRunRoute::SuggestWing(Player* bot)
     return RAID_RUN_WING_NAXX_CONSTRUCT;
 }
 
+bool NaxxRaidRunRoute::IsAtNaxxHub(Player* bot)
+{
+    if (!bot || bot->GetMapId() != 533)
+        return false;
+
+    return bot->GetExactDist2d(NAXX_HUB_X, NAXX_HUB_Y) <= NAXX_HUB_RADIUS;
+}
+
+bool NaxxRaidRunRoute::NeedsHubPortal(Player* bot)
+{
+    return bot && IsBossEncounterDone(bot, NPC_MAEXXNA) && !IsAtNaxxHub(bot);
+}
+
+GameObject* NaxxRaidRunRoute::FindWingReturnPortal(Player* bot, float range)
+{
+    if (!bot)
+        return nullptr;
+
+    GameObject* best = nullptr;
+    float bestDist = range;
+    uint32 const portals[] = {GO_MAEXXNA_PORTAL, GO_THADDIUS_PORTAL, GO_LOATHEB_PORTAL, GO_HORSEMAN_PORTAL};
+    for (uint32 entry : portals)
+    {
+        GameObject* go = bot->FindNearestGameObject(entry, range);
+        if (!go)
+            continue;
+
+        float const dist = bot->GetDistance(go);
+        if (dist < bestDist)
+        {
+            bestDist = dist;
+            best = go;
+        }
+    }
+
+    return best;
+}
+
 bool NaxxRaidRunRoute::IsWingComplete(Player* bot, RaidRunWing wing)
 {
     return FindFirstIncompleteStep(bot, wing) >= GetStepCount(wing);
@@ -377,6 +425,9 @@ bool NaxxRaidRunRoute::IsStepComplete(Player* bot, RaidRunWing wing, uint8 index
         return true;
 
     RaidRunRouteStep const& step = steps[index];
+    if (step.portalGoEntry)
+        return IsAtNaxxHub(bot);
+
     if (step.bossEntry)
     {
         if (!IsBossEncounterDone(bot, step.bossEntry))

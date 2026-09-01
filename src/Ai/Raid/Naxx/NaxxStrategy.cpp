@@ -55,6 +55,7 @@ void RaidNaxxStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     ));
 
     // Maexxna — web wraps (16486) use NullCreatureAI and never appear on "attackers".
+    // Ranged break cocoons from the floor; melee stay on the boss.
     triggers.push_back(new TriggerNode("maexxna web wrap",
         { NextAction("maexxna choose target", ACTION_RAID + 3) }
     ));

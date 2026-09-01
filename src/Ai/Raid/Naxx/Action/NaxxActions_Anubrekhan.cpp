@@ -10,26 +10,28 @@
 #include "Playerbots.h"
 #include "Spell.h"
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 namespace
 {
 constexpr float ANUB_MELEE_SPREAD_RADIUS = 9.0f;
 constexpr float ANUB_RANGED_SPREAD_RADIUS = 24.0f;
-constexpr float ANUB_LOCUST_SAFE_RADIUS = 8.0f;
 constexpr float ANUB_SLOT_TOLERANCE = 3.5f;
-// Anub gate is 3202.67,-3475.94 (west). Hold just inside so Locust has the full room to kite east.
-constexpr float ANUB_TANK_X = 3228.0f;
-constexpr float ANUB_TANK_Y = -3476.0f;
+// East spawn door (home ~3331). West entrance is 3202.67,-3475.94 — do not drag him there.
+constexpr float ANUB_TANK_X = 3308.59f;
+constexpr float ANUB_TANK_Y = -3476.29f;
 constexpr float ANUB_TANK_TOLERANCE = 4.0f;
-constexpr float ANUB_LOCUST_RAID_X = 3208.0f;
-constexpr float ANUB_LOCUST_RAID_Y = -3476.0f;
-// Spawn / east wall — Locust kite destination. North/south juke once the tank arrives.
 constexpr float ANUB_LOCUST_KITE_X = 3308.59f;
 constexpr float ANUB_LOCUST_KITE_Y = -3476.29f;
 constexpr float ANUB_LOCUST_NORTH_Y = -3448.0f;
 constexpr float ANUB_LOCUST_SOUTH_Y = -3504.0f;
 constexpr float ANUB_LOCUST_ARRIVE = 8.0f;
+// Mid-room (instance circle centre). Locust: raid holds here, ~spell range west of Anub.
+constexpr float ANUB_ROOM_CENTER_X = 3273.38f;
+constexpr float ANUB_ROOM_CENTER_Y = -3475.88f;
+constexpr float ANUB_LOCUST_RANGE = 30.0f;
+constexpr float ANUB_LOCUST_FAN = 12.0f;
 
 bool IsAnubLocustSwarm(Unit* boss)
 {
@@ -166,7 +168,7 @@ bool AnubrekhanPositionAction::Execute(Event /*event*/)
                       MovementPriority::MOVEMENT_COMBAT);
     }
 
-    // Hold Anub at the west door so Locust has a full-room kite to the east spawn.
+    // Hold Anub at the east spawn door. Walking him to the entrance wipes positioning.
     if (!locust && botAI->IsMainTank(bot))
     {
         if (boss->GetVictim() != bot)
@@ -188,29 +190,53 @@ bool AnubrekhanPositionAction::Execute(Event /*event*/)
     if (!GetAnubSpreadSlot(botAI, bot, index, count) || !count)
         return false;
 
-    float const twoPi = 2.0f * static_cast<float>(M_PI);
-    float angle = twoPi * static_cast<float>(index) / static_cast<float>(count);
-    // Impale: spread east into the room. Tank is at the west door; west is the wall/hallway.
-    if (!locust)
-    {
-        float const east = 0.0f;
-        float const arc = static_cast<float>(M_PI);
-        if (count == 1)
-            angle = east;
-        else
-            angle = east - arc / 2.0f + arc * static_cast<float>(index) / static_cast<float>(count - 1);
-    }
-    float radius = ANUB_RANGED_SPREAD_RADIUS;
     if (locust)
-        radius = ANUB_LOCUST_SAFE_RADIUS;
-    else if (botAI->IsMelee(bot))
+    {
+        // Mid-room, west of Anub, at spell range so ranged keep casting while he N/S jukes.
+        float const dx = ANUB_ROOM_CENTER_X - boss->GetPositionX();
+        float const dy = ANUB_ROOM_CENTER_Y - boss->GetPositionY();
+        float const len = std::hypot(dx, dy);
+        float destX;
+        float destY;
+        if (len < 1.0f)
+        {
+            destX = boss->GetPositionX() - ANUB_LOCUST_RANGE;
+            destY = boss->GetPositionY();
+        }
+        else
+        {
+            float const dist = std::min(ANUB_LOCUST_RANGE, len);
+            destX = boss->GetPositionX() + dx / len * dist;
+            destY = boss->GetPositionY() + dy / len * dist;
+            if (count > 1)
+            {
+                float const offset = ANUB_LOCUST_FAN * (static_cast<float>(index) / static_cast<float>(count - 1) - 0.5f);
+                destX += (-dy / len) * offset;
+                destY += (dx / len) * offset;
+            }
+        }
+        if (bot->GetExactDist2d(destX, destY) <= ANUB_SLOT_TOLERANCE)
+            return false;
+
+        return MoveTo(bot->GetMapId(), destX, destY, bot->GetPositionZ(), false, false, false, false,
+                      MovementPriority::MOVEMENT_COMBAT);
+    }
+
+    float angle;
+    // Impale: spread west into the room. Tank is at the east spawn door; east is the wall.
+    float const west = static_cast<float>(M_PI);
+    float const arc = static_cast<float>(M_PI);
+    if (count == 1)
+        angle = west;
+    else
+        angle = west - arc / 2.0f + arc * static_cast<float>(index) / static_cast<float>(count - 1);
+
+    float radius = ANUB_RANGED_SPREAD_RADIUS;
+    if (botAI->IsMelee(bot))
         radius = std::max(ANUB_MELEE_SPREAD_RADIUS, boss->GetCombatReach() + 2.5f);
 
-    // Locust: stack at the gate while the tank kites east. Impale: orbit the boss, melee included.
-    float const originX = locust ? ANUB_LOCUST_RAID_X : boss->GetPositionX();
-    float const originY = locust ? ANUB_LOCUST_RAID_Y : boss->GetPositionY();
-    float const destX = originX + cos(angle) * radius;
-    float const destY = originY + sin(angle) * radius;
+    float const destX = boss->GetPositionX() + cos(angle) * radius;
+    float const destY = boss->GetPositionY() + sin(angle) * radius;
     if (bot->GetExactDist2d(destX, destY) <= ANUB_SLOT_TOLERANCE)
         return false;
 
