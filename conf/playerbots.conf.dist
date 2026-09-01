@@ -608,8 +608,8 @@ AiPlayerbot.AutoGearCommandAltBots = 1
 AiPlayerbot.AutoGearBisCommand = 0
 
 # Equipment quality limitation for autogear command (1 = normal, 2 = uncommon, 3 = rare, 4 = epic, 5 = legendary)
-# Default: 3 (rare)
-AiPlayerbot.AutoGearQualityLimit = 3
+# Default: 4 (epic)
+AiPlayerbot.AutoGearQualityLimit = 4
 
 # Equipment item level (not gearscore) limitation for autogear command (0 = no limit)
 # Classic
