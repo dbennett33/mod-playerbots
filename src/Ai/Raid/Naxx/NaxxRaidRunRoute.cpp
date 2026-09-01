@@ -147,10 +147,14 @@ bool NaxxRaidRunRoute::IsBossEncounterDone(Player* bot, uint32 bossEntry)
         return false;
 
     Map* map = bot->GetMap();
-    if (!map)
+    if (!map || !map->IsDungeon())
         return false;
 
-    InstanceScript* instance = map->GetInstanceScript();
+    InstanceMap* imap = map->ToInstanceMap();
+    if (!imap)
+        return false;
+
+    InstanceScript* instance = imap->GetInstanceScript();
     if (!instance)
         return false;
 
