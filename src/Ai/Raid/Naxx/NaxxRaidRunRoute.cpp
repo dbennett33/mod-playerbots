@@ -14,11 +14,12 @@
 
 namespace
 {
-// Arachnid wing route (map 533). Coordinates tuned for bot pathing near boss rooms.
+// Arachnid wing (map 533). Hub is 3005,-3434,304. Construct/Patchwerk is north (Y ~-3210, Z 293).
+// Spider door is east of the hub (Anub room edge 3195,-3476). Do not use 3125,-3310 — that is Patchwerk's hallway.
 std::vector<RaidRunRouteStep> const arachnidSteps =
 {
-    { "Arachnid rally", 3125.0f, -3310.0f, 293.0f, 533, 0, 15.0f, 0.0f },
-    { "Anub'Rekhan approach", 3270.0f, -3470.0f, 287.0f, 533, 0, 12.0f, 0.0f },
+    { "Naxx hub", 3005.51f, -3434.64f, 304.20f, 533, 0, 18.0f, 0.0f },
+    { "Arachnid entrance", 3175.0f, -3476.0f, 287.50f, 533, 0, 12.0f, 0.0f },
     { "Anub'Rekhan", 3273.79f, -3477.21f, 287.62f, 533, 15956, 10.0f, 40.0f },
     { "Faerlina corridor", 3330.0f, -3580.0f, 265.0f, 533, 0, 12.0f, 0.0f },
     { "Grand Widow Faerlina", 3362.70f, -3620.40f, 261.33f, 533, 15953, 10.0f, 40.0f },
