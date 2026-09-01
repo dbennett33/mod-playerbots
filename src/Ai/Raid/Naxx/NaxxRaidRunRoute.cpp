@@ -26,7 +26,8 @@ namespace
 std::vector<RaidRunRouteStep> const arachnidSteps =
 {
     { "Arachnid entrance", 3175.0f, -3476.0f, 287.50f, 533, 0, 12.0f, 0.0f },
-    { "Anub'Rekhan", 3273.79f, -3477.21f, 287.62f, 533, 15956, 10.0f, 40.0f },
+    // Anub spawn (east end). Do not use room center 3273,-3477 — that drags him off the door.
+    { "Anub'Rekhan", 3308.59f, -3476.29f, 287.16f, 533, 15956, 10.0f, 40.0f },
     { "Faerlina corridor", 3330.0f, -3580.0f, 265.0f, 533, 0, 12.0f, 0.0f },
     { "Grand Widow Faerlina", 3362.70f, -3620.40f, 261.33f, 533, 15953, 10.0f, 40.0f },
     { "Faerlina south", 3350.0f, -3660.0f, 261.08f, 533, 0, 12.0f, 0.0f },

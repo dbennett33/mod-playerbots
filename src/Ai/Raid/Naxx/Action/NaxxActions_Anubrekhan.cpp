@@ -18,6 +18,10 @@ constexpr float ANUB_MELEE_SPREAD_RADIUS = 9.0f;
 constexpr float ANUB_RANGED_SPREAD_RADIUS = 24.0f;
 constexpr float ANUB_LOCUST_SAFE_RADIUS = 10.0f;
 constexpr float ANUB_SLOT_TOLERANCE = 3.5f;
+// Creature spawn 3308.59,-3476.29 — east end of the room, facing the west entrance.
+constexpr float ANUB_TANK_X = 3308.59f;
+constexpr float ANUB_TANK_Y = -3476.29f;
+constexpr float ANUB_TANK_TOLERANCE = 4.0f;
 
 bool IsAnubLocustSwarm(Unit* boss)
 {
@@ -151,16 +155,40 @@ bool AnubrekhanPositionAction::Execute(Event /*event*/)
                       bot->GetPositionZ(), false, false, false, false, MovementPriority::MOVEMENT_COMBAT);
     }
 
-    // Main tank holds the boss during Impale; everyone else takes a unique angle so the line hits one person.
+    // Hold Anub at spawn (east end) so the raid can spread in the open room toward the door.
     if (!locust && botAI->IsMainTank(bot))
-        return false;
+    {
+        if (boss->GetVictim() != bot)
+            return false;
+
+        float const dist = bot->GetExactDist2d(ANUB_TANK_X, ANUB_TANK_Y);
+        if (dist <= ANUB_TANK_TOLERANCE)
+            return false;
+
+        float const step = std::min(10.0f, dist);
+        float const moveX = bot->GetPositionX() + (ANUB_TANK_X - bot->GetPositionX()) / dist * step;
+        float const moveY = bot->GetPositionY() + (ANUB_TANK_Y - bot->GetPositionY()) / dist * step;
+        return MoveTo(bot->GetMapId(), moveX, moveY, bot->GetPositionZ(), false, false, false, false,
+                      MovementPriority::MOVEMENT_COMBAT);
+    }
 
     uint32 index = 0;
     uint32 count = 0;
     if (!GetAnubSpreadSlot(botAI, bot, index, count) || !count)
         return false;
 
-    float const angle = 2.0f * static_cast<float>(M_PI) * static_cast<float>(index) / static_cast<float>(count);
+    float const twoPi = 2.0f * static_cast<float>(M_PI);
+    float angle = twoPi * static_cast<float>(index) / static_cast<float>(count);
+    // Impale: spread in the open room (west of spawn), not through the east wall behind Anub.
+    if (!locust)
+    {
+        float const west = static_cast<float>(M_PI);
+        float const arc = static_cast<float>(M_PI);
+        if (count == 1)
+            angle = west;
+        else
+            angle = west - arc / 2.0f + arc * static_cast<float>(index) / static_cast<float>(count - 1);
+    }
     float radius = ANUB_RANGED_SPREAD_RADIUS;
     if (locust)
         radius = ANUB_LOCUST_SAFE_RADIUS;
