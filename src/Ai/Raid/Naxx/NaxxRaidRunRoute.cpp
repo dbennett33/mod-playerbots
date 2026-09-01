@@ -5,6 +5,7 @@
  */
 
 #include "NaxxRaidRunRoute.h"
+#include "AttackersValue.h"
 #include "CellImpl.h"
 #include "Creature.h"
 #include "GridNotifiers.h"
@@ -23,13 +24,22 @@ namespace
 //
 // Faerlina -> Maexxna is a U-shaped hallway (web south, west, south, then east). A straight line from
 // Faerlina toward Maexxna hits the room's SE wall and clips through, skipping the trash packs.
+//
+// Faerlina room cultists (15980) / acolytes (15981) are in formation with her (groupAI member-assist).
+// Pulling her with packs up brings the rest of the room. Path east wall, then south, then west.
 std::vector<RaidRunRouteStep> const arachnidSteps =
 {
     { "Arachnid entrance", 3175.0f, -3476.0f, 287.50f, 533, 0, 12.0f, 0.0f },
     // Anub spawn (east end). Do not use room center 3273,-3477 — that drags him off the door.
     { "Anub'Rekhan", 3308.59f, -3476.29f, 287.16f, 533, 15956, 10.0f, 40.0f },
     { "Faerlina corridor", 3330.0f, -3580.0f, 265.0f, 533, 0, 12.0f, 0.0f },
-    { "Grand Widow Faerlina", 3362.70f, -3620.40f, 261.33f, 533, 15953, 10.0f, 40.0f },
+    // Stay east of her 20yd detection while walking south to the packs behind the platform.
+    { "Faerlina east wall", 3385.0f, -3588.0f, 261.08f, 533, 0, 12.0f, 0.0f },
+    { "Faerlina left front", 3372.0f, -3648.0f, 259.17f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Faerlina left rear", 3375.0f, -3669.0f, 259.17f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Faerlina right rear", 3327.0f, -3669.0f, 259.17f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Faerlina right front", 3334.0f, -3648.0f, 259.17f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Grand Widow Faerlina", 3353.25f, -3620.10f, 261.08f, 533, 15953, 10.0f, 40.0f, 70.0f },
     { "Faerlina south", 3350.0f, -3660.0f, 261.08f, 533, 0, 12.0f, 0.0f },
     { "Faerlina web", 3318.0f, -3692.0f, 259.10f, 533, 0, 12.0f, 0.0f },
     { "Maexxna ramp", 3298.0f, -3710.0f, 268.00f, 533, 0, 12.0f, 0.0f },
@@ -48,6 +58,8 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
 constexpr uint32 NPC_ANUBREKHAN = 15956;
 constexpr uint32 NPC_FAERLINA = 15953;
 constexpr uint32 NPC_MAEXXNA = 15952;
+constexpr uint32 NPC_NAXXRAMAS_FOLLOWER = 16505;
+constexpr uint32 NPC_NAXXRAMAS_WORSHIPPER = 16506;
 constexpr uint32 NAXX_BOSS_ANUB = 6;
 constexpr uint32 NAXX_BOSS_FAERLINA = 7;
 constexpr uint32 NAXX_BOSS_MAEXXNA = 8;
@@ -91,9 +103,49 @@ bool IsTravelStepPassed(Player* bot, uint8 index)
     if (NaxxRaidRunRoute::IsBossEncounterDone(bot, nextBoss->bossEntry))
         return true;
 
+    // Trash-clear pins must be walked. "Closer to next boss" would skip packs and pull her.
+    if (step->clearRadius > 0.0f)
+        return false;
+
+    for (uint8 i = index + 1; i < arachnidSteps.size(); ++i)
+    {
+        RaidRunRouteStep const& later = arachnidSteps[i];
+        if (ServerFacade::instance().IsDistanceLessOrEqualThan(
+                ServerFacade::instance().GetDistance2d(bot, later.x, later.y), later.arriveDistance))
+            return true;
+    }
+
     float const botToBoss = bot->GetExactDist2d(nextBoss->x, nextBoss->y);
     float const stepToBoss = std::hypot(step->x - nextBoss->x, step->y - nextBoss->y);
     return botToBoss + step->arriveDistance < stepToBoss;
+}
+
+bool IsRouteBossEntry(uint32 entry)
+{
+    return entry == NPC_ANUBREKHAN || entry == NPC_FAERLINA || entry == NPC_MAEXXNA;
+}
+
+bool IsFaerlinaEncounterAdd(uint32 entry)
+{
+    return entry == NPC_NAXXRAMAS_WORSHIPPER || entry == NPC_NAXXRAMAS_FOLLOWER;
+}
+
+bool IsClearableTrash(Creature* creature, Player* bot, uint32 skipBossEntry)
+{
+    if (!creature || !creature->IsAlive())
+        return false;
+
+    uint32 const entry = creature->GetEntry();
+    if (IsRouteBossEntry(entry) || entry == skipBossEntry || IsFaerlinaEncounterAdd(entry))
+        return false;
+
+    if (creature->IsCritter() || creature->IsTotem() || creature->IsPet() || creature->IsSummon())
+        return false;
+
+    if (creature->IsTrigger() || creature->IsCivilian())
+        return false;
+
+    return AttackersValue::IsPossibleTarget(creature, bot);
 }
 }  // namespace
 
@@ -161,6 +213,44 @@ bool NaxxRaidRunRoute::IsBossEncounterDone(Player* bot, uint32 bossEntry)
     return instance->IsBossDone(encounterId);
 }
 
+Creature* NaxxRaidRunRoute::FindClearableTrash(Player* bot, RaidRunRouteStep const& step)
+{
+    if (!bot || step.clearRadius <= 0.0f)
+        return nullptr;
+
+    float const toStep = bot->GetExactDist2d(step.x, step.y);
+    float const range = toStep + step.clearRadius;
+    if (range <= 0.0f)
+        return nullptr;
+
+    std::list<Unit*> units;
+    Acore::AnyUnitInObjectRangeCheck check(bot, range);
+    Acore::UnitListSearcher<Acore::AnyUnitInObjectRangeCheck> searcher(bot, units, check);
+    Cell::VisitObjects(bot, searcher, range);
+
+    Creature* best = nullptr;
+    float bestDistance = range;
+
+    for (Unit* unit : units)
+    {
+        Creature* creature = unit->ToCreature();
+        if (!IsClearableTrash(creature, bot, step.bossEntry))
+            continue;
+
+        if (creature->GetExactDist2d(step.x, step.y) > step.clearRadius)
+            continue;
+
+        float const dist = bot->GetDistance(creature);
+        if (dist < bestDistance)
+        {
+            bestDistance = dist;
+            best = creature;
+        }
+    }
+
+    return best;
+}
+
 bool NaxxRaidRunRoute::IsStepComplete(Player* bot, uint8 index)
 {
     if (!bot || index >= arachnidSteps.size())
@@ -168,7 +258,24 @@ bool NaxxRaidRunRoute::IsStepComplete(Player* bot, uint8 index)
 
     RaidRunRouteStep const& step = arachnidSteps[index];
     if (step.bossEntry)
-        return IsBossEncounterDone(bot, step.bossEntry);
+    {
+        if (!IsBossEncounterDone(bot, step.bossEntry))
+            return false;
+
+        return FindClearableTrash(bot, step) == nullptr;
+    }
+
+    if (step.clearRadius > 0.0f)
+    {
+        if (IsTravelStepPassed(bot, index))
+            return true;
+
+        if (!ServerFacade::instance().IsDistanceLessOrEqualThan(
+                ServerFacade::instance().GetDistance2d(bot, step.x, step.y), step.arriveDistance))
+            return false;
+
+        return FindClearableTrash(bot, step) == nullptr;
+    }
 
     if (ServerFacade::instance().IsDistanceLessOrEqualThan(
             ServerFacade::instance().GetDistance2d(bot, step.x, step.y), step.arriveDistance))

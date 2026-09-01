@@ -326,6 +326,19 @@ void RaidRunMgr::SyncRouteStep(Player* master, Player* bot)
         return;
 
     uint8 const first = NaxxRaidRunRoute::FindFirstIncompleteStep(bot);
-    if (first < state->routeStep)
-        state->routeStep = first;
+    if (first >= state->routeStep)
+        return;
+
+    // Rewind only if an earlier boss (or trash pinned before that boss) is still up.
+    // The Faerlina->Maexxna U-hallway walks away from Maexxna, so Euclidean "passed"
+    // flips travel steps incomplete and would bounce the tank between boss and door.
+    for (uint8 i = first; i < state->routeStep; ++i)
+    {
+        RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(i);
+        if (step && (step->bossEntry || step->clearRadius > 0.0f))
+        {
+            state->routeStep = first;
+            return;
+        }
+    }
 }

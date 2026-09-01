@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+class Creature;
 class Player;
 
 struct RaidRunRouteStep
@@ -24,6 +25,7 @@ struct RaidRunRouteStep
     uint32 bossEntry;
     float arriveDistance;
     float pullRadius;
+    float clearRadius = 0.0f;
 };
 
 class NaxxRaidRunRoute
@@ -36,6 +38,7 @@ public:
     static bool IsBossEncounterDone(Player* bot, uint32 bossEntry);
     static bool IsStepComplete(Player* bot, uint8 index);
     static uint8 FindFirstIncompleteStep(Player* bot);
+    static Creature* FindClearableTrash(Player* bot, RaidRunRouteStep const& step);
 };
 
 #endif

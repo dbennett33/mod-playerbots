@@ -54,6 +54,7 @@ public:
 
 private:
     Creature* FindPullTarget(RaidRunRouteStep const& step);
+    bool PullTarget(Creature* target, Event event);
 };
 
 class RaidRunFollowTankAction : public MovementAction

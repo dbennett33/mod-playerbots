@@ -165,6 +165,28 @@ Creature* RaidRunLeaderAction::FindPullTarget(RaidRunRouteStep const& step)
     return best;
 }
 
+bool RaidRunLeaderAction::PullTarget(Creature* target, Event event)
+{
+    if (!target)
+        return false;
+
+    if (!botAI->IsTank(bot))
+        return false;
+
+    float const engageDistance = sPlayerbotAIConfig.contactDistance > 8.0f ? sPlayerbotAIConfig.contactDistance : 8.0f;
+    if (bot->GetDistance(target) > engageDistance)
+        return MoveTo(target);
+
+    PullStrategy* strategy = PullStrategy::Get(botAI);
+    if (!strategy)
+        return false;
+
+    strategy->RequestPull(target);
+    context->GetValue<Unit*>("current target")->Set(target);
+    botAI->ChangeEngine(BOT_STATE_COMBAT);
+    return botAI->DoSpecificAction("pull start", event, true);
+}
+
 bool RaidRunLeaderAction::Execute(Event event)
 {
     Player* master = GetMaster();
@@ -232,6 +254,9 @@ bool RaidRunLeaderAction::Execute(Event event)
         botAI->TellMaster("Group ready — resuming");
     }
 
+    if (Creature* trash = NaxxRaidRunRoute::FindClearableTrash(bot, *step))
+        return PullTarget(trash, event);
+
     float distance = ServerFacade::instance().GetDistance2d(bot, step->x, step->y);
     if (distance > step->arriveDistance)
         return MoveTo(step->mapId, step->x, step->y, step->z, false, false);
@@ -239,19 +264,7 @@ bool RaidRunLeaderAction::Execute(Event event)
     if (step->bossEntry)
     {
         if (Creature* target = FindPullTarget(*step))
-        {
-            PullStrategy* strategy = PullStrategy::Get(botAI);
-            if (!strategy)
-                return false;
-
-            if (!botAI->IsTank(bot))
-                return false;
-
-            strategy->RequestPull(target);
-            context->GetValue<Unit*>("current target")->Set(target);
-            botAI->ChangeEngine(BOT_STATE_COMBAT);
-            return botAI->DoSpecificAction("pull start", event, true);
-        }
+            return PullTarget(target, event);
 
         return false;
     }
