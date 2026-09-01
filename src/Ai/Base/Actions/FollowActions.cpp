@@ -170,6 +170,9 @@ bool FollowAction::Execute(Event /*event*/)
                 bool const dupMove = IsDuplicateMove(destX, destY, destZ);
                 bool const waiting = IsWaitingForLastMove(priority);
 
+                if (movingAllowed && (dupMove || waiting))
+                    return true;
+
                 if (movingAllowed && !dupMove && !waiting)
                 {
                     if (bot->IsSitState())
@@ -213,6 +216,16 @@ bool FollowAction::Execute(Event /*event*/)
     {
         moved = Follow(AI_VALUE(Unit*, target));
     }
+    else if (formation->PreferFollowMotion())
+    {
+        Unit* followUnit = botAI->GetMaster();
+        if (!followUnit)
+            followUnit = AI_VALUE(Unit*, "group leader");
+        if (!followUnit || followUnit == bot)
+            return false;
+
+        moved = Follow(followUnit, formation->GetMaxDistance(), GetFollowAngle());
+    }
     else
     {
         WorldLocation loc = formation->GetLocation();
@@ -221,7 +234,7 @@ bool FollowAction::Execute(Event /*event*/)
 
         MovementPriority priority = botAI->GetState() == BOT_STATE_COMBAT ? MovementPriority::MOVEMENT_COMBAT : MovementPriority::MOVEMENT_NORMAL;
         moved = MoveTo(loc.GetMapId(), loc.GetPositionX(), loc.GetPositionY(), loc.GetPositionZ(), false, false, false,
-                       true, priority, true);
+                       true, priority, false);
     }
 
     // This section has been commented out because it was forcing the pet to

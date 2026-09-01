@@ -34,10 +34,19 @@
 #include "Vehicle.h"
 #include "WaypointMovementGenerator.h"
 #include "G3D/Vector3.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
 #include <string>
+
+namespace
+{
+float MoveRepathDistance()
+{
+    return std::max(2.0f, sPlayerbotAIConfig.targetPosRecalcDistance);
+}
+}
 
 MovementAction::MovementAction(PlayerbotAI* botAI, std::string const name) : Action(botAI, name)
 {
@@ -65,11 +74,8 @@ bool MovementAction::JumpTo(uint32 mapId, float x, float y, float z, MovementPri
     if (!IsMovingAllowed())
         return false;
 
-    if (IsDuplicateMove(x, y, z))
-        return false;
-
-    if (IsWaitingForLastMove(priority))
-        return false;
+    if (ShouldKeepCurrentMove(x, y, z, priority))
+        return true;
 
     float speed = bot->GetSpeed(MOVE_RUN);
     MotionMaster& mm = *bot->GetMotionMaster();
@@ -174,14 +180,8 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool /*idle
     {
         return false;
     }
-    if (IsDuplicateMove(x, y, z))
-    {
-        return false;
-    }
-    if (IsWaitingForLastMove(priority))
-    {
-        return false;
-    }
+    if (ShouldKeepCurrentMove(x, y, z, priority))
+        return true;
 
     bool generatePath = !bot->IsFlying() && !bot->isSwimming();
     bool disableMoveSplinePath =
@@ -896,13 +896,13 @@ bool MovementAction::IsMovingAllowed(WorldObject* target)
     return IsMovingAllowed();
 }
 
-bool MovementAction::IsDuplicateMove(float x, float y, float z)
+bool MovementAction::IsDuplicateMove(float x, float y, float /*z*/)
 {
     LastMovement& lastMove = *context->GetValue<LastMovement&>("last movement");
 
-    // heuristic 5s
+    // Ignore Z: SearchForBestPath remaps height, which used to make the same walk look new every tick.
     if (lastMove.msTime + sPlayerbotAIConfig.maxWaitForMove < getMSTime() ||
-        lastMove.lastMoveShort.GetExactDist(x, y, z) > 0.01f)
+        lastMove.lastMoveShort.GetExactDist2d(x, y) > MoveRepathDistance())
         return false;
 
     return true;
@@ -920,6 +920,21 @@ bool MovementAction::IsWaitingForLastMove(MovementPriority priority)
         return true;
 
     return false;
+}
+
+bool MovementAction::ShouldKeepCurrentMove(float x, float y, float /*z*/, MovementPriority priority)
+{
+    LastMovement& lastMove = *context->GetValue<LastMovement&>("last movement");
+    if (priority > lastMove.priority)
+        return false;
+
+    if (!bot->isMoving())
+        return false;
+
+    if (lastMove.lastMoveShort.GetExactDist2d(x, y) <= MoveRepathDistance())
+        return true;
+
+    return IsWaitingForLastMove(priority);
 }
 
 bool MovementAction::IsMovingAllowed()
@@ -1100,13 +1115,6 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
     if (!target)
         return false;
 
-    if (!bot->InBattleground() && ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
-                                                                           sPlayerbotAIConfig.followDistance))
-    {
-        // botAI->TellError("No need to follow");
-        return false;
-    }
-
     /*
     if (!bot->InBattleground()
         && ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target->GetPositionX(),
@@ -1224,24 +1232,15 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
             return MoveTo(target, sPlayerbotAIConfig.followDistance);
     }
 
-    if (ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
-                                                 sPlayerbotAIConfig.followDistance))
+    if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
     {
-        // botAI->TellError("No need to follow");
-        return false;
+        Unit* currentTarget = ServerFacade::instance().GetFollowTarget(bot);
+        if (currentTarget && currentTarget->GetGUID() == target->GetGUID())
+            return true;
     }
 
     if (target->IsFriendlyTo(bot) && bot->IsMounted() && AI_VALUE(GuidVector, "all targets").empty())
         distance += angle;
-
-    if (!bot->InBattleground() && ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
-                                                                           sPlayerbotAIConfig.followDistance))
-    {
-        // botAI->TellError("No need to follow");
-        return false;
-    }
-
-    bot->HandleEmoteCommand(0);
 
     if (bot->IsSitState())
         bot->SetStandState(UNIT_STAND_STATE_STAND);
@@ -1252,15 +1251,8 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
         botAI->InterruptSpell();
     }
 
-    // AI_VALUE(LastMovement&, "last movement").Set(target);
     ClearIdleState();
-
-    if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
-    {
-        Unit* currentTarget = ServerFacade::instance().GetChaseTarget(bot);
-        if (currentTarget && currentTarget->GetGUID() == target->GetGUID())
-            return false;
-    }
+    AI_VALUE(LastMovement&, "last movement").Set(target);
 
     if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() != FOLLOW_MOTION_TYPE)
         bot->GetMotionMaster()->Clear();
@@ -1798,6 +1790,19 @@ void MovementAction::DoMovePoint(Unit* unit, float x, float y, float z, bool gen
     {
         float gZ = unit->GetMapWaterOrGroundLevel(unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ());
         unit->UpdatePosition(unit->GetPositionX(), unit->GetPositionY(), gZ, false);
+    }
+
+    if (!backwards)
+    {
+        float destX = 0.0f;
+        float destY = 0.0f;
+        float destZ = 0.0f;
+        if (mm->GetDestination(destX, destY, destZ))
+        {
+            Position requested(x, y, z);
+            if (requested.GetExactDist2d(destX, destY) <= MoveRepathDistance())
+                return;
+        }
     }
 
     mm->Clear();

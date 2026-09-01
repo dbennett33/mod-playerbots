@@ -128,6 +128,7 @@ public:
     }
 
     float GetMaxDistance() override { return sPlayerbotAIConfig.followDistance; }
+    bool PreferFollowMotion() const override { return true; }
 };
 
 class ChaosFormation : public MoveAheadFormation
@@ -174,6 +175,7 @@ public:
     }
 
     float GetMaxDistance() override { return sPlayerbotAIConfig.followDistance + dr; }
+    bool PreferFollowMotion() const override { return true; }
 
 private:
     time_t lastChangeTime;
