@@ -5,8 +5,86 @@
  */
 
 #include "NaxxActions.h"
+#include "NaxxSpellIds.h"
 #include "ObjectGuid.h"
 #include "Playerbots.h"
+#include "Spell.h"
+#include <algorithm>
+#include <vector>
+
+namespace
+{
+constexpr float ANUB_MELEE_SPREAD_RADIUS = 9.0f;
+constexpr float ANUB_RANGED_SPREAD_RADIUS = 24.0f;
+constexpr float ANUB_LOCUST_SAFE_RADIUS = 10.0f;
+constexpr float ANUB_SLOT_TOLERANCE = 3.5f;
+
+bool IsAnubLocustSwarm(Unit* boss)
+{
+    if (!boss)
+        return false;
+
+    if (NaxxSpellIds::HasAnyAura(
+            boss, {NaxxSpellIds::LocustSwarm10, NaxxSpellIds::LocustSwarm10Alt, NaxxSpellIds::LocustSwarm25}))
+        return true;
+
+    if (Spell* spell = boss->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+    {
+        if (NaxxSpellIds::MatchesAnySpellId(spell->GetSpellInfo(), {NaxxSpellIds::LocustSwarm10,
+                NaxxSpellIds::LocustSwarm10Alt, NaxxSpellIds::LocustSwarm25}))
+            return true;
+    }
+
+    if (Spell* spell = boss->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+    {
+        if (NaxxSpellIds::MatchesAnySpellId(spell->GetSpellInfo(), {NaxxSpellIds::LocustSwarm10,
+                NaxxSpellIds::LocustSwarm10Alt, NaxxSpellIds::LocustSwarm25}))
+            return true;
+    }
+
+    return false;
+}
+
+// Stable unique slot among alive non-main-tank members so Impale lines do not clip a stack.
+bool GetAnubSpreadSlot(PlayerbotAI* botAI, Player* bot, uint32& index, uint32& count)
+{
+    Group* group = bot->GetGroup();
+    if (!group)
+    {
+        index = 0;
+        count = 1;
+        return true;
+    }
+
+    std::vector<Player*> members;
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (!member || !member->IsAlive() || member->GetMapId() != bot->GetMapId())
+            continue;
+        if (botAI->IsMainTank(member))
+            continue;
+
+        members.push_back(member);
+    }
+
+    if (members.empty())
+        return false;
+
+    std::sort(members.begin(), members.end(), [](Player const* a, Player const* b)
+    {
+        return a->GetGUID() < b->GetGUID();
+    });
+
+    auto const it = std::find(members.begin(), members.end(), bot);
+    if (it == members.end())
+        return false;
+
+    index = static_cast<uint32>(std::distance(members.begin(), it));
+    count = static_cast<uint32>(members.size());
+    return true;
+}
+}  // namespace
 
 bool AnubrekhanChooseTargetAction::Execute(Event /*event*/)
 {
@@ -64,20 +142,39 @@ bool AnubrekhanPositionAction::Execute(Event /*event*/)
     if (!boss)
         return false;
 
-    bool inPhase = botAI->HasAura("locust swarm", boss) || boss->GetCurrentSpell(CURRENT_GENERIC_SPELL);
-    if (inPhase)
+    bool const locust = IsAnubLocustSwarm(boss);
+    if (locust && botAI->IsMainTank(bot))
     {
-        if (botAI->IsMainTank(bot))
-        {
-            uint32 nearest = FindNearestWaypoint();
-            uint32 next_point;
-            next_point = (nearest + 1) % intervals;
-
-            return MoveTo(bot->GetMapId(), waypoints[next_point].first, waypoints[next_point].second,
-                          bot->GetPositionZ(), false, false, false, false, MovementPriority::MOVEMENT_COMBAT);
-        }
-        else
-            return MoveInside(533, 3272.49f, -3476.27f, bot->GetPositionZ(), 3.0f, MovementPriority::MOVEMENT_COMBAT);
+        uint32 nearest = FindNearestWaypoint();
+        uint32 next_point = (nearest + 1) % intervals;
+        return MoveTo(bot->GetMapId(), waypoints[next_point].first, waypoints[next_point].second,
+                      bot->GetPositionZ(), false, false, false, false, MovementPriority::MOVEMENT_COMBAT);
     }
-    return false;
+
+    // Main tank holds the boss during Impale; everyone else takes a unique angle so the line hits one person.
+    if (!locust && botAI->IsMainTank(bot))
+        return false;
+
+    uint32 index = 0;
+    uint32 count = 0;
+    if (!GetAnubSpreadSlot(botAI, bot, index, count) || !count)
+        return false;
+
+    float const angle = 2.0f * static_cast<float>(M_PI) * static_cast<float>(index) / static_cast<float>(count);
+    float radius = ANUB_RANGED_SPREAD_RADIUS;
+    if (locust)
+        radius = ANUB_LOCUST_SAFE_RADIUS;
+    else if (botAI->IsMelee(bot))
+        radius = std::max(ANUB_MELEE_SPREAD_RADIUS, boss->GetCombatReach() + 2.5f);
+
+    // Locust: stack loosely at room center while the tank kites. Impale: orbit the boss, melee included.
+    float const originX = locust ? center_x : boss->GetPositionX();
+    float const originY = locust ? center_y : boss->GetPositionY();
+    float const destX = originX + cos(angle) * radius;
+    float const destY = originY + sin(angle) * radius;
+    if (bot->GetExactDist2d(destX, destY) <= ANUB_SLOT_TOLERANCE)
+        return false;
+
+    return MoveTo(bot->GetMapId(), destX, destY, bot->GetPositionZ(), false, false, false, false,
+                  MovementPriority::MOVEMENT_COMBAT);
 }

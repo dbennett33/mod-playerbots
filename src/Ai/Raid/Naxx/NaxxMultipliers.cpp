@@ -240,6 +240,11 @@ float AnubrekhanGenericMultiplier::GetValue(Action* action)
     if (!boss)
         return 1.0f;
 
+    // Follow / formation collapse the raid onto the tank, which wipes to Impale.
+    if (boss->IsInCombat() &&
+        (dynamic_cast<FollowAction*>(action) || dynamic_cast<CombatFormationMoveAction*>(action)))
+        return 0.0f;
+
     if (NaxxSpellIds::HasAnyAura(
             boss, {NaxxSpellIds::LocustSwarm10, NaxxSpellIds::LocustSwarm10Alt, NaxxSpellIds::LocustSwarm25}) ||
         botAI->HasAura("locust swarm", boss))
