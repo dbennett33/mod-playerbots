@@ -36,6 +36,7 @@ public:
 
     void SetPhase(Player* master, RaidRunPhase phase);
     void AdvanceStep(Player* master);
+    void SyncRouteStep(Player* master, Player* bot);
     void ApplyRunStrategies(Player* master);
     void RemoveRunStrategies(Player* master);
 

@@ -181,7 +181,26 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode)
             return ResumeRun(master);
 
         if (existing->phase == RAID_RUN_REGEN || existing->phase == RAID_RUN_RUNNING)
-            return "Raid run is already active — use raid pause or raid stop";
+        {
+            Player* tank = FindLeaderTank(master);
+            if (!tank)
+                return "No bot tank found in the group";
+
+            existing->routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank);
+            existing->phase = RAID_RUN_RUNNING;
+            existing->announcedRegen = false;
+            existing->leaderTankGuid = tank->GetGUID();
+            AssignMainTank(master->GetGroup(), tank);
+            ApplyRunStrategies(master);
+
+            std::ostringstream out;
+            out << "Raid run resynced to instance — step "
+                << static_cast<uint32>(existing->routeStep + 1) << "/"
+                << static_cast<uint32>(NaxxRaidRunRoute::GetStepCount());
+            if (RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(existing->routeStep))
+                out << " (" << step->name << ")";
+            return out.str();
+        }
     }
 
     Player* tank = FindLeaderTank(master);
@@ -191,7 +210,7 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode)
     RaidRunState& state = _states[master->GetGUID()];
     state.phase = RAID_RUN_RUNNING;
     state.wing = RAID_RUN_WING_NAXX_ARACHNID;
-    state.routeStep = 0;
+    state.routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank);
     state.leaderTankGuid = tank->GetGUID();
     state.regenBreakStarted = 0;
     state.speedrunMode = speedrunMode;
@@ -224,7 +243,10 @@ std::string RaidRunMgr::ResumeRun(Player* master)
         return "No raid run is active";
 
     if (state->phase == RAID_RUN_WING_COMPLETE)
-        return "Wing already complete — use raid stop and raid go to restart";
+        return "Wing already complete — whisper raid go to resync or raid stop to clear";
+
+    if (Player* tank = FindLeaderTank(master))
+        SyncRouteStep(master, tank);
 
     state->phase = RAID_RUN_RUNNING;
     state->announcedRegen = false;
@@ -295,4 +317,15 @@ void RaidRunMgr::AdvanceStep(Player* master)
         state->phase = RAID_RUN_WING_COMPLETE;
         RemoveRunStrategies(master);
     }
+}
+
+void RaidRunMgr::SyncRouteStep(Player* master, Player* bot)
+{
+    RaidRunState* state = GetState(master);
+    if (!state || !bot)
+        return;
+
+    uint8 const first = NaxxRaidRunRoute::FindFirstIncompleteStep(bot);
+    if (first < state->routeStep)
+        state->routeStep = first;
 }

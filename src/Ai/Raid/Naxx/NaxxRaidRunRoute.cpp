@@ -9,19 +9,22 @@
 #include "Creature.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
+#include "InstanceScript.h"
+#include "Map.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include <cmath>
 
 namespace
 {
-// Arachnid wing (map 533). Hub is 3005,-3434,304. Construct/Patchwerk is north (Y ~-3210, Z 293).
-// Spider door is east of the hub (Anub room edge 3195,-3476). Do not use 3125,-3310 — that is Patchwerk's hallway.
+// Arachnid wing (map 533). Hub center is 3005,-3434,304 (DK portal). Do not waypoint that —
+// it pulls the raid into the middle of the start room. Spider door is east (Anub room edge
+// 3195,-3476, Z 287). Do not use 3125,-3310 — that is Patchwerk's hallway.
 //
 // Faerlina -> Maexxna is a U-shaped hallway (web south, west, south, then east). A straight line from
 // Faerlina toward Maexxna hits the room's SE wall and clips through, skipping the trash packs.
 std::vector<RaidRunRouteStep> const arachnidSteps =
 {
-    { "Naxx hub", 3005.51f, -3434.64f, 304.20f, 533, 0, 18.0f, 0.0f },
     { "Arachnid entrance", 3175.0f, -3476.0f, 287.50f, 533, 0, 12.0f, 0.0f },
     { "Anub'Rekhan", 3273.79f, -3477.21f, 287.62f, 533, 15956, 10.0f, 40.0f },
     { "Faerlina corridor", 3330.0f, -3580.0f, 265.0f, 533, 0, 12.0f, 0.0f },
@@ -39,7 +42,59 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
     { "Maexxna gate", 3410.0f, -3824.0f, 294.75f, 533, 0, 12.0f, 0.0f },
     { "Maexxna", 3511.38f, -3921.58f, 299.51f, 533, 15952, 10.0f, 40.0f }
 };
+
+// Must match NaxxramasEncouter in naxxramas.h.
+constexpr uint32 NPC_ANUBREKHAN = 15956;
+constexpr uint32 NPC_FAERLINA = 15953;
+constexpr uint32 NPC_MAEXXNA = 15952;
+constexpr uint32 NAXX_BOSS_ANUB = 6;
+constexpr uint32 NAXX_BOSS_FAERLINA = 7;
+constexpr uint32 NAXX_BOSS_MAEXXNA = 8;
+
+bool EncounterIdForBoss(uint32 bossEntry, uint32& encounterId)
+{
+    switch (bossEntry)
+    {
+        case NPC_ANUBREKHAN:
+            encounterId = NAXX_BOSS_ANUB;
+            return true;
+        case NPC_FAERLINA:
+            encounterId = NAXX_BOSS_FAERLINA;
+            return true;
+        case NPC_MAEXXNA:
+            encounterId = NAXX_BOSS_MAEXXNA;
+            return true;
+        default:
+            return false;
+    }
 }
+
+RaidRunRouteStep const* NextBossStep(uint8 index)
+{
+    for (uint8 i = index + 1; i < arachnidSteps.size(); ++i)
+    {
+        if (arachnidSteps[i].bossEntry)
+            return &arachnidSteps[i];
+    }
+
+    return nullptr;
+}
+
+bool IsTravelStepPassed(Player* bot, uint8 index)
+{
+    RaidRunRouteStep const* step = &arachnidSteps[index];
+    RaidRunRouteStep const* nextBoss = NextBossStep(index);
+    if (!nextBoss)
+        return false;
+
+    if (NaxxRaidRunRoute::IsBossEncounterDone(bot, nextBoss->bossEntry))
+        return true;
+
+    float const botToBoss = bot->GetExactDist2d(nextBoss->x, nextBoss->y);
+    float const stepToBoss = std::hypot(step->x - nextBoss->x, step->y - nextBoss->y);
+    return botToBoss + step->arriveDistance < stepToBoss;
+}
+}  // namespace
 
 std::vector<RaidRunRouteStep> const& NaxxRaidRunRoute::GetArachnidSteps()
 {
@@ -81,14 +136,53 @@ bool NaxxRaidRunRoute::IsBossAlive(Player* bot, uint32 bossEntry, float range)
     return false;
 }
 
-bool NaxxRaidRunRoute::IsStepComplete(Player* bot, RaidRunRouteStep const& step)
+bool NaxxRaidRunRoute::IsBossEncounterDone(Player* bot, uint32 bossEntry)
 {
-    if (!bot)
+    if (!bot || !bossEntry)
         return false;
 
-    if (step.bossEntry)
-        return !IsBossAlive(bot, step.bossEntry, 250.0f);
+    uint32 encounterId = 0;
+    if (!EncounterIdForBoss(bossEntry, encounterId))
+        return false;
 
-    return ServerFacade::instance().IsDistanceLessOrEqualThan(
-        ServerFacade::instance().GetDistance2d(bot, step.x, step.y), step.arriveDistance);
+    Map* map = bot->GetMap();
+    if (!map)
+        return false;
+
+    InstanceScript* instance = map->GetInstanceScript();
+    if (!instance)
+        return false;
+
+    return instance->IsBossDone(encounterId);
+}
+
+bool NaxxRaidRunRoute::IsStepComplete(Player* bot, uint8 index)
+{
+    if (!bot || index >= arachnidSteps.size())
+        return true;
+
+    RaidRunRouteStep const& step = arachnidSteps[index];
+    if (step.bossEntry)
+        return IsBossEncounterDone(bot, step.bossEntry);
+
+    if (ServerFacade::instance().IsDistanceLessOrEqualThan(
+            ServerFacade::instance().GetDistance2d(bot, step.x, step.y), step.arriveDistance))
+        return true;
+
+    return IsTravelStepPassed(bot, index);
+}
+
+uint8 NaxxRaidRunRoute::FindFirstIncompleteStep(Player* bot)
+{
+    uint8 const count = GetStepCount();
+    if (!bot)
+        return 0;
+
+    for (uint8 i = 0; i < count; ++i)
+    {
+        if (!IsStepComplete(bot, i))
+            return i;
+    }
+
+    return count;
 }

@@ -178,6 +178,8 @@ bool RaidRunLeaderAction::Execute(Event event)
     if (state->phase == RAID_RUN_PAUSED)
         return false;
 
+    sRaidRunMgr.SyncRouteStep(master, bot);
+
     RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(state->routeStep);
     if (!step)
     {
@@ -186,7 +188,7 @@ bool RaidRunLeaderAction::Execute(Event event)
         return true;
     }
 
-    if (NaxxRaidRunRoute::IsStepComplete(bot, *step))
+    if (NaxxRaidRunRoute::IsStepComplete(bot, state->routeStep))
     {
         sRaidRunMgr.AdvanceStep(master);
         if (RaidRunState const* updated = sRaidRunMgr.GetState(master))
@@ -250,6 +252,8 @@ bool RaidRunLeaderAction::Execute(Event event)
             botAI->ChangeEngine(BOT_STATE_COMBAT);
             return botAI->DoSpecificAction("pull start", event, true);
         }
+
+        return false;
     }
 
     sRaidRunMgr.AdvanceStep(master);

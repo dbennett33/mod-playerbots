@@ -33,7 +33,9 @@ public:
     static uint8 GetStepCount();
     static RaidRunRouteStep const* GetStep(uint8 index);
     static bool IsBossAlive(Player* bot, uint32 bossEntry, float range = 250.0f);
-    static bool IsStepComplete(Player* bot, RaidRunRouteStep const& step);
+    static bool IsBossEncounterDone(Player* bot, uint32 bossEntry);
+    static bool IsStepComplete(Player* bot, uint8 index);
+    static uint8 FindFirstIncompleteStep(Player* bot);
 };
 
 #endif
