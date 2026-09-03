@@ -36,6 +36,18 @@ struct RaidRunState
     bool announcedRegen = false;
     bool announcedBossWait = false;
     uint8 noPathAnnouncedStep = 255;
+    float lastProgressX = 0.f;
+    float lastProgressY = 0.f;
+    time_t lastProgressAt = 0;
+    uint8 stuckRetries = 0;
+
+    void ClearStuckTracking()
+    {
+        lastProgressX = 0.f;
+        lastProgressY = 0.f;
+        lastProgressAt = 0;
+        stuckRetries = 0;
+    }
 };
 
 #endif

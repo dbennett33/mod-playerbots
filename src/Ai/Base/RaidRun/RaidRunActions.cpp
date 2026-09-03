@@ -306,6 +306,7 @@ bool RaidRunLeaderAction::Execute(Event event)
         {
             state->phase = RAID_RUN_RUNNING;
             state->announcedRegen = false;
+            state->ClearStuckTracking();
             botAI->TellMaster("Regen timeout — resuming");
         }
         else
@@ -328,6 +329,7 @@ bool RaidRunLeaderAction::Execute(Event event)
     {
         state->phase = RAID_RUN_RUNNING;
         state->announcedRegen = false;
+        state->ClearStuckTracking();
         botAI->TellMaster("Group ready — resuming");
     }
 
@@ -340,7 +342,41 @@ bool RaidRunLeaderAction::Execute(Event event)
     // Keep the step's Z. SearchForBestPath otherwise snaps onto Grobbulus's lab (Z 311).
     float distance = ServerFacade::instance().GetDistance2d(bot, step->x, step->y);
     if (distance > step->arriveDistance)
+    {
+        if (state->phase == RAID_RUN_RUNNING)
+        {
+            time_t const now = time(nullptr);
+            float const progress = bot->GetExactDist2d(state->lastProgressX, state->lastProgressY);
+            if (state->lastProgressAt == 0 || progress >= 5.0f)
+            {
+                state->lastProgressX = bot->GetPositionX();
+                state->lastProgressY = bot->GetPositionY();
+                state->lastProgressAt = now;
+                if (progress >= 5.0f)
+                    state->stuckRetries = 0;
+            }
+            else if (now - state->lastProgressAt >= 15)
+            {
+                bot->StopMoving();
+                ++state->stuckRetries;
+                std::ostringstream retryMsg;
+                retryMsg << "stuck at " << step->name << " — retry "
+                    << static_cast<uint32>(state->stuckRetries) << "/3";
+                botAI->TellMaster(retryMsg.str());
+                state->lastProgressX = bot->GetPositionX();
+                state->lastProgressY = bot->GetPositionY();
+                state->lastProgressAt = now;
+                if (state->stuckRetries >= 3)
+                {
+                    state->phase = RAID_RUN_PAUSED;
+                    botAI->TellMaster(std::string("stuck at ") + step->name + " — run paused");
+                    return false;
+                }
+                return MoveToStepStrict(*step);
+            }
+        }
         return MoveToStepStrict(*step);
+    }
 
     if (step->bossEntry)
     {

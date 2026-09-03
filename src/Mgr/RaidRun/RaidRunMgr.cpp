@@ -278,6 +278,7 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
     state.announcedRegen = false;
     state.announcedBossWait = false;
     state.noPathAnnouncedStep = 255;
+    state.ClearStuckTracking();
 
     AssignMainTank(master->GetGroup(), tank);
     ApplyRunStrategies(master);
@@ -374,6 +375,7 @@ void RaidRunMgr::AdvanceStep(Player* master)
 
     ++state->routeStep;
     state->announcedRegen = false;
+    state->ClearStuckTracking();
 
     if (state->routeStep >= NaxxRaidRunRoute::GetStepCount(state->wing))
     {
