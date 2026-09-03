@@ -34,10 +34,10 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
     { "Arachnid entrance", 3175.0f, -3476.0f, 287.50f, 533, 0, 12.0f, 0.0f },
     // Anub spawn (east end). Do not use room center 3273,-3477 — that drags him off the door.
     { "Anub'Rekhan", 3308.59f, -3476.29f, 287.16f, 533, 15956, 10.0f, 40.0f },
-    // After Anub, walk back west through his room, then south down the ramp to the Faerlina
-    // corridor. Without these pins mmap tries to cut straight through the wall (22-unit Z drop).
-    { "Anub exit", 3210.0f, -3476.0f, 287.16f, 533, 0, 12.0f, 0.0f },
-    { "Anub-Faerlina ramp top", 3270.0f, -3530.0f, 287.16f, 533, 0, 12.0f, 0.0f },
+    // Stay on the platform. 3210 is past the west slime; mmap walks the outer ring to get there.
+    // South ramp starts at the platform edge (~Y -3510), not out in the moat at -3530.
+    { "Anub exit", 3245.0f, -3476.0f, 287.16f, 533, 0, 12.0f, 0.0f },
+    { "Anub-Faerlina ramp top", 3273.0f, -3510.0f, 287.16f, 533, 0, 12.0f, 0.0f },
     { "Anub-Faerlina ramp mid", 3300.0f, -3555.0f, 276.0f, 533, 0, 12.0f, 0.0f },
     { "Anub-Faerlina ramp bot", 3320.0f, -3570.0f, 265.0f, 533, 0, 12.0f, 0.0f },
     { "Faerlina corridor", 3330.0f, -3580.0f, 265.0f, 533, 0, 12.0f, 0.0f },
