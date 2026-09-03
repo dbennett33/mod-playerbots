@@ -20,6 +20,7 @@ public:
     uint8 SuggestWing(Player* bot) const override;
     bool IsAtHub(Player* bot) const override;
     bool NeedsHubPortal(Player* bot) const override;
+    uint8 GetHubReturnWing(Player* bot) const override;
     GameObject* FindWingReturnPortal(Player* bot, float range = 120.0f) const override;
     bool IsWingComplete(Player* bot, uint8 wing) const override;
     bool IsBossAlive(Player* bot, uint32 bossEntry, float range = 250.0f) const;

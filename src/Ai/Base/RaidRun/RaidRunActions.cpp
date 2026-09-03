@@ -113,6 +113,8 @@ bool RaidRunGoChatAction::Execute(Event event)
     RaidRunWing wing = RAID_RUN_WING_NONE;
     if (event.getParam().find("construct") != std::string::npos)
         wing = RAID_RUN_WING_NAXX_CONSTRUCT;
+    else if (event.getParam().find("plague") != std::string::npos)
+        wing = RAID_RUN_WING_NAXX_PLAGUE;
     RaidRunState const* existing = sRaidRunMgr.GetState(master);
     std::string message;
     if (existing && existing->phase == RAID_RUN_PAUSED)

@@ -95,6 +95,33 @@ std::vector<RaidRunRouteStep> const constructSteps =
     { "Thaddius", 3513.84f, -2926.55f, 302.91f, 533, 15928, 15.0f, 80.0f, 0.0f }
 };
 
+// Plague quarter is west of the hub. Pins from instance doors/GOs (181198–181241, 181231)
+// and script positions (Noth home, Loatheb tank). Ramp 297→262 needs Z pins. Optional
+// recorder walk can still replace these if a pin clips.
+std::vector<RaidRunRouteStep> const plagueSteps =
+{
+    { "Plague entrance", 2965.0f, -3476.0f, 297.60f, 533, 0, 12.0f, 0.0f },
+    { "Plague upper hall", 2905.0f, -3485.0f, 297.70f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Plague west hall", 2847.43f, -3489.47f, 297.84f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Noth ramp top", 2820.0f, -3489.0f, 290.00f, 533, 0, 12.0f, 0.0f },
+    { "Noth ramp mid", 2785.0f, -3489.0f, 276.00f, 533, 0, 12.0f, 0.0f },
+    { "Noth door", 2737.66f, -3489.72f, 262.10f, 533, 0, 10.0f, 0.0f, 18.0f },
+    { "Noth the Plaguebringer", 2684.94f, -3502.53f, 261.31f, 533, 15954, 12.0f, 40.0f, 30.0f },
+    { "Noth exit", 2684.28f, -3559.36f, 261.91f, 533, 0, 12.0f, 0.0f },
+    { "Heigan corridor", 2750.0f, -3620.0f, 267.00f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Heigan lower hall", 2800.0f, -3665.0f, 273.00f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Heigan door", 2822.93f, -3685.30f, 273.54f, 533, 0, 12.0f, 0.0f, 14.0f },
+    // East of the platform, on the floor — not 2794,-3706 (Heigan's dance platform).
+    { "Heigan the Unclean", 2793.80f, -3685.00f, 273.67f, 533, 15936, 12.0f, 35.0f, 0.0f },
+    { "Heigan exit", 2771.50f, -3737.34f, 273.60f, 533, 0, 12.0f, 0.0f },
+    { "Loatheb west hall", 2840.0f, -3778.0f, 273.55f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Loatheb south hall", 2909.69f, -3818.45f, 273.55f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Loatheb approach", 2909.69f, -3900.00f, 273.55f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Loatheb gate", 2909.69f, -3947.28f, 273.55f, 533, 0, 12.0f, 0.0f, 18.0f },
+    { "Loatheb", 2877.57f, -3967.00f, 273.40f, 533, 16011, 12.0f, 40.0f, 0.0f },
+    { "Loatheb portal", 2909.00f, -4025.02f, 273.48f, 533, 0, 8.0f, 0.0f, 0.0f, 181577 }
+};
+
 std::vector<RaidRunRouteStep> const emptySteps;
 
 // Must match NaxxramasEncouter in naxxramas.h.
@@ -107,6 +134,9 @@ constexpr uint32 NPC_FEUGEN = 15930;
 constexpr uint32 NPC_ANUBREKHAN = 15956;
 constexpr uint32 NPC_FAERLINA = 15953;
 constexpr uint32 NPC_MAEXXNA = 15952;
+constexpr uint32 NPC_NOTH = 15954;
+constexpr uint32 NPC_HEIGAN = 15936;
+constexpr uint32 NPC_LOATHEB = 16011;
 constexpr uint32 NPC_NAXXRAMAS_FOLLOWER = 16505;
 constexpr uint32 NPC_NAXXRAMAS_WORSHIPPER = 16506;
 constexpr uint32 NPC_DREAD_CREEPER = 15974;
@@ -126,6 +156,12 @@ constexpr uint32 NPC_SURGICAL_ASSIST = 16022;
 constexpr uint32 NPC_EMBALMING_SLIME = 16024;
 constexpr uint32 NPC_STITCHED_GIANT = 16025;
 constexpr uint32 NPC_SLUDGE_BELCHER = 16029;
+constexpr uint32 NPC_PLAGUE_BEAST = 16034;
+constexpr uint32 NPC_FRENZIED_BAT = 16036;
+constexpr uint32 NPC_DISEASED_MAGGOT = 16056;
+constexpr uint32 NPC_ROTTING_MAGGOT = 16057;
+constexpr uint32 NPC_PLAGUE_SLIME = 16243;
+constexpr uint32 NPC_INFECTIOUS_GHOUL = 16244;
 constexpr uint32 NAXX_BOSS_PATCHWERK = 0;
 constexpr uint32 NAXX_BOSS_GROBBULUS = 1;
 constexpr uint32 NAXX_BOSS_GLUTH = 2;
@@ -133,6 +169,9 @@ constexpr uint32 NAXX_BOSS_ANUB = 6;
 constexpr uint32 NAXX_BOSS_FAERLINA = 7;
 constexpr uint32 NAXX_BOSS_MAEXXNA = 8;
 constexpr uint32 NAXX_BOSS_THADDIUS = 9;
+constexpr uint32 NAXX_BOSS_NOTH = 3;
+constexpr uint32 NAXX_BOSS_HEIGAN = 4;
+constexpr uint32 NAXX_BOSS_LOATHEB = 5;
 constexpr uint32 GO_MAEXXNA_PORTAL = 181575;
 constexpr uint32 GO_THADDIUS_PORTAL = 181576;
 constexpr uint32 GO_LOATHEB_PORTAL = 181577;
@@ -166,6 +205,15 @@ bool EncounterIdForBoss(uint32 bossEntry, uint32& encounterId)
         case NPC_THADDIUS:
             encounterId = NAXX_BOSS_THADDIUS;
             return true;
+        case NPC_NOTH:
+            encounterId = NAXX_BOSS_NOTH;
+            return true;
+        case NPC_HEIGAN:
+            encounterId = NAXX_BOSS_HEIGAN;
+            return true;
+        case NPC_LOATHEB:
+            encounterId = NAXX_BOSS_LOATHEB;
+            return true;
         default:
             return false;
     }
@@ -179,6 +227,8 @@ std::vector<RaidRunRouteStep> const& StepsFor(uint8 wing)
             return arachnidSteps;
         case RAID_RUN_WING_NAXX_CONSTRUCT:
             return constructSteps;
+        case RAID_RUN_WING_NAXX_PLAGUE:
+            return plagueSteps;
         default:
             return emptySteps;
     }
@@ -200,7 +250,8 @@ bool IsRouteBossEntry(uint32 entry)
 {
     return entry == NPC_PATCHWERK || entry == NPC_GROBBULUS || entry == NPC_GLUTH || entry == NPC_THADDIUS
         || entry == NPC_ANUBREKHAN || entry == NPC_FAERLINA || entry == NPC_MAEXXNA
-        || entry == NPC_STALAGG || entry == NPC_FEUGEN;
+        || entry == NPC_STALAGG || entry == NPC_FEUGEN
+        || entry == NPC_NOTH || entry == NPC_HEIGAN || entry == NPC_LOATHEB;
 }
 
 bool IsEncounterAdd(uint32 entry)
@@ -224,13 +275,19 @@ bool IsConstructTrash(uint32 entry)
         || entry == NPC_STITCHED_GIANT || entry == NPC_SLUDGE_BELCHER;
 }
 
+bool IsPlagueTrash(uint32 entry)
+{
+    return entry == NPC_PLAGUE_BEAST || entry == NPC_FRENZIED_BAT || entry == NPC_DISEASED_MAGGOT
+        || entry == NPC_ROTTING_MAGGOT || entry == NPC_PLAGUE_SLIME || entry == NPC_INFECTIOUS_GHOUL;
+}
+
 bool IsClearableTrash(Creature* creature, Player* bot, uint32 skipBossEntry)
 {
     if (!creature || !creature->IsAlive())
         return false;
 
     uint32 const entry = creature->GetEntry();
-    if (!IsArachnidTrash(entry) && !IsConstructTrash(entry))
+    if (!IsArachnidTrash(entry) && !IsConstructTrash(entry) && !IsPlagueTrash(entry))
         return false;
 
     if (IsRouteBossEntry(entry) || entry == skipBossEntry || IsEncounterAdd(entry))
@@ -278,6 +335,8 @@ char const* NaxxRaidRunRouteProvider::GetWingName(uint8 wing) const
             return "Arachnid";
         case RAID_RUN_WING_NAXX_CONSTRUCT:
             return "Construct";
+        case RAID_RUN_WING_NAXX_PLAGUE:
+            return "Plague";
         default:
             return "Unknown";
     }
@@ -288,7 +347,10 @@ uint8 NaxxRaidRunRouteProvider::SuggestWing(Player* bot) const
     if (!IsWingComplete(bot, RAID_RUN_WING_NAXX_ARACHNID))
         return RAID_RUN_WING_NAXX_ARACHNID;
 
-    return RAID_RUN_WING_NAXX_CONSTRUCT;
+    if (!IsWingComplete(bot, RAID_RUN_WING_NAXX_CONSTRUCT))
+        return RAID_RUN_WING_NAXX_CONSTRUCT;
+
+    return RAID_RUN_WING_NAXX_PLAGUE;
 }
 
 bool NaxxRaidRunRouteProvider::IsAtHub(Player* bot) const
@@ -301,7 +363,35 @@ bool NaxxRaidRunRouteProvider::IsAtHub(Player* bot) const
 
 bool NaxxRaidRunRouteProvider::NeedsHubPortal(Player* bot) const
 {
-    return bot && IsBossEncounterDone(bot, NPC_MAEXXNA) && !IsAtHub(bot);
+    return GetHubReturnWing(bot) != RAID_RUN_WING_NONE;
+}
+
+uint8 NaxxRaidRunRouteProvider::GetHubReturnWing(Player* bot) const
+{
+    if (!bot || IsAtHub(bot))
+        return RAID_RUN_WING_NONE;
+
+    GameObject* portal = FindWingReturnPortal(bot, 150.0f);
+    if (portal)
+    {
+        switch (portal->GetEntry())
+        {
+            case GO_MAEXXNA_PORTAL:
+                return RAID_RUN_WING_NAXX_ARACHNID;
+            case GO_LOATHEB_PORTAL:
+                return RAID_RUN_WING_NAXX_PLAGUE;
+            default:
+                break;
+        }
+    }
+
+    if (IsBossEncounterDone(bot, NPC_LOATHEB))
+        return RAID_RUN_WING_NAXX_PLAGUE;
+
+    if (IsBossEncounterDone(bot, NPC_MAEXXNA))
+        return RAID_RUN_WING_NAXX_ARACHNID;
+
+    return RAID_RUN_WING_NONE;
 }
 
 GameObject* NaxxRaidRunRouteProvider::FindWingReturnPortal(Player* bot, float range) const

@@ -46,6 +46,7 @@ public:
     virtual Creature* FindClearableTrash(Player* bot, RaidRunRouteStep const& step) const = 0;
     virtual bool IsBossEncounterDone(Player* bot, uint32 bossEntry) const = 0;
     virtual bool NeedsHubPortal(Player* bot) const = 0;
+    virtual uint8 GetHubReturnWing(Player* bot) const { (void)bot; return 0; }
     virtual bool IsAtHub(Player* bot) const = 0;
     virtual GameObject* FindWingReturnPortal(Player* bot, float range = 120.0f) const = 0;
 };

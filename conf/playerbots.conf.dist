@@ -436,8 +436,8 @@ AiPlayerbot.LowMana = 15
 AiPlayerbot.MediumMana = 40
 AiPlayerbot.HighMana = 65
 
-# Bot-led raid run. Whisper any bot: raid go | raid go construct | raid pause |
-# raid stop | raid status. Recording: raid record start|stop|pin|boss|clear.
+# Bot-led raid run. Whisper any bot: raid go | raid go construct | raid go plague |
+# raid pause | raid stop | raid status. Recording: raid record start|stop|pin|boss|clear.
 # Default 0 for public forks. Private realms that want the feature set this to 1
 # in the local (non-dist) playerbots.conf.
 AiPlayerbot.EnableRaidRun = 0

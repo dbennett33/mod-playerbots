@@ -454,9 +454,9 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
     if (wing == RAID_RUN_WING_NONE)
         wing = static_cast<RaidRunWing>(provider->SuggestWing(tank));
 
-    if (provider->NeedsHubPortal(tank))
+    if (uint8 const returnWing = provider->GetHubReturnWing(tank))
     {
-        wing = RAID_RUN_WING_NAXX_ARACHNID;
+        wing = static_cast<RaidRunWing>(returnWing);
         uint8 const count = provider->GetStepCount(wing);
         routeStep = count ? static_cast<uint8>(count - 1) : 0;
     }

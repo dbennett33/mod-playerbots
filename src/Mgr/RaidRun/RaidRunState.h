@@ -24,7 +24,8 @@ enum RaidRunWing : uint8
 {
     RAID_RUN_WING_NONE = 0,
     RAID_RUN_WING_NAXX_ARACHNID = 1,
-    RAID_RUN_WING_NAXX_CONSTRUCT = 2
+    RAID_RUN_WING_NAXX_CONSTRUCT = 2,
+    RAID_RUN_WING_NAXX_PLAGUE = 3
 };
 
 struct RaidRunState

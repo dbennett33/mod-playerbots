@@ -72,6 +72,7 @@ Enable in `playerbots.conf` (`AiPlayerbot.EnableRaidRun = 1`; dist default is 0)
 |---------|--------|
 | `raid go` | Start (or resume) the suggested wing |
 | `raid go construct` | Start the Construct wing |
+| `raid go plague` | Start the Plague wing |
 | `raid pause` / `raid stop` / `raid status` | Pause, clear, or print status |
 | `raid record start` / `stop` / `pin <name>` / `boss <entry> <name>` / `clear <radius> <name>` | Walk-and-pin a route (writes a pasteable C++ table) |
 
