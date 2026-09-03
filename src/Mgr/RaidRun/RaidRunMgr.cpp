@@ -277,6 +277,7 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
     state.regenBreakStarted = 0;
     state.announcedRegen = false;
     state.announcedBossWait = false;
+    state.noPathAnnouncedStep = 255;
 
     AssignMainTank(master->GetGroup(), tank);
     ApplyRunStrategies(master);

@@ -35,6 +35,7 @@ struct RaidRunState
     time_t regenBreakStarted = 0;
     bool announcedRegen = false;
     bool announcedBossWait = false;
+    uint8 noPathAnnouncedStep = 255;
 };
 
 #endif

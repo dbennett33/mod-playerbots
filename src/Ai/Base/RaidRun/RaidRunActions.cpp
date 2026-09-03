@@ -13,15 +13,18 @@
 #include "GameObject.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
+#include "Log.h"
 #include "NaxxRaidRunRoute.h"
 #include "NaxxSpellIds.h"
 #include "NonCombatActions.h"
 #include "ObjectAccessor.h"
+#include "PathGenerator.h"
 #include "PullStrategy.h"
 #include "RaidRunMgr.h"
 #include "RaidRunState.h"
 #include "ServerFacade.h"
 #include "WorldPacket.h"
+#include <cmath>
 #include <ctime>
 #include <sstream>
 #include <string>
@@ -212,6 +215,40 @@ bool RaidRunLeaderAction::UseNaxxPortal(uint32 goEntry, float x, float y, float 
     return true;
 }
 
+bool RaidRunLeaderAction::ReportNoPath(RaidRunRouteStep const& step)
+{
+    Player* master = GetMaster();
+    RaidRunState* state = master ? sRaidRunMgr.GetState(master) : nullptr;
+    uint8 const index = state ? state->routeStep : 0;
+    uint32 const total = state ? NaxxRaidRunRoute::GetStepCount(state->wing) : 0;
+
+    LOG_WARN("playerbots", "RaidRun: no path to {} ({:.1f}, {:.1f}, {:.1f} map {})",
+        step.name, step.x, step.y, step.z, step.mapId);
+
+    if (state && state->noPathAnnouncedStep != index)
+    {
+        std::ostringstream out;
+        out << "no path to " << step.name << " (step " << static_cast<uint32>(index + 1) << "/" << total << ")";
+        botAI->TellMaster(out.str());
+        state->noPathAnnouncedStep = index;
+    }
+
+    return false;
+}
+
+bool RaidRunLeaderAction::MoveToStepStrict(RaidRunRouteStep const& step)
+{
+    PathGenerator gen(bot);
+    gen.CalculatePath(step.x, step.y, step.z, false);
+    if (gen.GetPathType() & PATHFIND_NOPATH)
+        return ReportNoPath(step);
+
+    if (std::fabs(gen.GetActualEndPosition().z - step.z) > 8.0f)
+        return ReportNoPath(step);
+
+    return MoveTo(step.mapId, step.x, step.y, step.z, false, false, false, true);
+}
+
 bool RaidRunLeaderAction::Execute(Event event)
 {
     Player* master = GetMaster();
@@ -303,7 +340,7 @@ bool RaidRunLeaderAction::Execute(Event event)
     // Keep the step's Z. SearchForBestPath otherwise snaps onto Grobbulus's lab (Z 311).
     float distance = ServerFacade::instance().GetDistance2d(bot, step->x, step->y);
     if (distance > step->arriveDistance)
-        return MoveTo(step->mapId, step->x, step->y, step->z, false, false, false, true);
+        return MoveToStepStrict(*step);
 
     if (step->bossEntry)
     {

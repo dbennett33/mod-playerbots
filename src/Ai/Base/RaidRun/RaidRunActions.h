@@ -56,6 +56,8 @@ private:
     Creature* FindPullTarget(RaidRunRouteStep const& step);
     bool PullTarget(Creature* target, Event event);
     bool UseNaxxPortal(uint32 goEntry, float x, float y, float z);
+    bool MoveToStepStrict(RaidRunRouteStep const& step);
+    bool ReportNoPath(RaidRunRouteStep const& step);
 };
 
 class RaidRunFollowTankAction : public MovementAction
