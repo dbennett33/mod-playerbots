@@ -15,7 +15,6 @@
 #include "GridNotifiersImpl.h"
 #include "Group.h"
 #include "Log.h"
-#include "NaxxRaidRunRoute.h"
 #include "NaxxSpellIds.h"
 #include "NonCombatActions.h"
 #include "ObjectAccessor.h"
@@ -23,6 +22,7 @@
 #include "PullStrategy.h"
 #include "RaidRunMgr.h"
 #include "RaidRunRecorder.h"
+#include "RaidRunRoute.h"
 #include "RaidRunState.h"
 #include "ServerFacade.h"
 #include "WorldPacket.h"
@@ -76,6 +76,11 @@ uint8 ResurrectTargetPriority(Player* member, Player* master)
         return 2;
 
     return 3;
+}
+
+RaidRunRouteProvider* GetRunProvider(Player* player)
+{
+    return sRaidRunMgr.GetProvider(player);
 }
 
 char const* ResurrectActionName(uint8 cls)
@@ -272,7 +277,8 @@ bool RaidRunLeaderAction::ReportNoPath(RaidRunRouteStep const& step)
     Player* master = GetMaster();
     RaidRunState* state = master ? sRaidRunMgr.GetState(master) : nullptr;
     uint8 const index = state ? state->routeStep : 0;
-    uint32 const total = state ? NaxxRaidRunRoute::GetStepCount(state->wing) : 0;
+    RaidRunRouteProvider* provider = GetRunProvider(bot);
+    uint32 const total = (state && provider) ? provider->GetStepCount(state->wing) : 0;
 
     LOG_WARN("playerbots", "RaidRun: no path to {} ({:.1f}, {:.1f}, {:.1f} map {})",
         step.name, step.x, step.y, step.z, step.mapId);
@@ -317,17 +323,21 @@ bool RaidRunLeaderAction::Execute(Event event)
 
     sRaidRunMgr.SyncRouteStep(master, bot);
 
-    RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(state->wing, state->routeStep);
+    RaidRunRouteProvider* provider = GetRunProvider(bot);
+    if (!provider)
+        return false;
+
+    RaidRunRouteStep const* step = provider->GetStep(state->wing, state->routeStep);
     if (!step)
     {
         sRaidRunMgr.StopRun(master);
-        botAI->TellMaster(std::string("Raid run complete — ") + NaxxRaidRunRoute::GetWingName(state->wing)
+        botAI->TellMaster(std::string("Raid run complete — ") + provider->GetWingName(state->wing)
             + " wing cleared");
         return true;
     }
 
     if (state->phase != RAID_RUN_RECOVERY &&
-        NaxxRaidRunRoute::IsStepComplete(bot, state->wing, state->routeStep))
+        provider->IsStepComplete(bot, state->wing, state->routeStep))
     {
         RaidRunWing const prevWing = state->wing;
         sRaidRunMgr.AdvanceStep(master);
@@ -335,15 +345,15 @@ bool RaidRunLeaderAction::Execute(Event event)
         {
             if (updated->phase == RAID_RUN_WING_COMPLETE)
             {
-                botAI->TellMaster(std::string("Raid run complete — ") + NaxxRaidRunRoute::GetWingName(prevWing)
+                botAI->TellMaster(std::string("Raid run complete — ") + provider->GetWingName(prevWing)
                     + " wing cleared");
             }
             else if (updated->wing != prevWing)
             {
-                botAI->TellMaster(std::string("Arachnid cleared — starting ")
-                    + NaxxRaidRunRoute::GetWingName(updated->wing) + " wing");
+                botAI->TellMaster(std::string(provider->GetWingName(prevWing)) + " cleared — starting "
+                    + provider->GetWingName(updated->wing) + " wing");
             }
-            else if (RaidRunRouteStep const* next = NaxxRaidRunRoute::GetStep(updated->wing, updated->routeStep))
+            else if (RaidRunRouteStep const* next = provider->GetStep(updated->wing, updated->routeStep))
             {
                 if (next->portalGoEntry)
                     botAI->TellMaster("Heading to the wing portal");
@@ -417,7 +427,7 @@ bool RaidRunLeaderAction::Execute(Event event)
         botAI->TellMaster("Group ready — resuming");
     }
 
-    if (Creature* trash = NaxxRaidRunRoute::FindClearableTrash(bot, *step))
+    if (Creature* trash = provider->FindClearableTrash(bot, *step))
         return PullTarget(trash, event);
 
     if (step->portalGoEntry)
@@ -532,9 +542,10 @@ bool RaidRunFollowTankAction::Execute(Event /*event*/)
     if (botAI->HasStrategy("stay", BOT_STATE_NON_COMBAT))
         return false;
 
-    if (!NaxxRaidRunRoute::IsAtNaxxHub(bot) && bot->GetExactDist2d(tank) > 120.0f)
+    RaidRunRouteProvider* provider = GetRunProvider(bot);
+    if (provider && !provider->IsAtHub(bot) && bot->GetExactDist2d(tank) > 120.0f)
     {
-        GameObject* portal = NaxxRaidRunRoute::FindWingReturnPortal(bot, 150.0f);
+        GameObject* portal = provider->FindWingReturnPortal(bot, 150.0f);
         if (portal)
         {
             if (!portal->IsAtInteractDistance(bot))

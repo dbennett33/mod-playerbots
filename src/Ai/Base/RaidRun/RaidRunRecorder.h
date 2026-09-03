@@ -7,7 +7,7 @@
 #ifndef PLAYERBOTS_RAIDRUNRECORDER_H
 #define PLAYERBOTS_RAIDRUNRECORDER_H
 
-#include "NaxxRaidRunRoute.h"
+#include "RaidRunRoute.h"
 #include "ObjectGuid.h"
 #include <string>
 #include <vector>

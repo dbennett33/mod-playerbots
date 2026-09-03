@@ -15,6 +15,7 @@
 class Group;
 class Player;
 class PlayerbotMgr;
+class RaidRunRouteProvider;
 
 class RaidRunMgr
 {
@@ -50,6 +51,10 @@ public:
     static bool HasLivingResurrector(Player* bot);
     static bool ShouldSuppressSpiritRelease(Player* bot);
 
+    void RegisterProvider(uint32 mapId, RaidRunRouteProvider* provider);
+    RaidRunRouteProvider* GetProviderForMap(uint32 mapId) const;
+    RaidRunRouteProvider* GetProvider(Player const* player) const;
+
 private:
     RaidRunMgr() = default;
 
@@ -58,6 +63,7 @@ private:
     bool NeedsWipeRecovery(Player* ref) const;
     void ReviveBotsAtWingStart(Player* master);
     std::unordered_map<ObjectGuid, RaidRunState> _states;
+    std::unordered_map<uint32, RaidRunRouteProvider*> _providers;
 };
 
 #define sRaidRunMgr RaidRunMgr::instance()

@@ -6,12 +6,12 @@
 
 #include "RaidRunMgr.h"
 #include "Group.h"
-#include "NaxxRaidRunRoute.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
 #include "PlayerbotMgr.h"
 #include "Playerbots.h"
+#include "RaidRunRoute.h"
 #include "RandomPlayerbotMgr.h"
 #include <functional>
 #include <sstream>
@@ -101,6 +101,26 @@ void RaidRunMgr::ClearState(Player* master)
         return;
 
     _states.erase(master->GetGUID());
+}
+
+void RaidRunMgr::RegisterProvider(uint32 mapId, RaidRunRouteProvider* provider)
+{
+    if (provider)
+        _providers[mapId] = provider;
+}
+
+RaidRunRouteProvider* RaidRunMgr::GetProviderForMap(uint32 mapId) const
+{
+    auto const itr = _providers.find(mapId);
+    if (itr == _providers.end())
+        return nullptr;
+
+    return itr->second;
+}
+
+RaidRunRouteProvider* RaidRunMgr::GetProvider(Player const* player) const
+{
+    return player ? GetProviderForMap(player->GetMapId()) : nullptr;
 }
 
 Player* RaidRunMgr::FindLeaderTank(Player* master)
@@ -311,8 +331,9 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
     if (!master || !master->IsInWorld())
         return "Master not available";
 
-    if (master->GetMapId() != 533)
-        return "Raid run requires Naxxramas (map 533)";
+    RaidRunRouteProvider* provider = GetProviderForMap(master->GetMapId());
+    if (!provider)
+        return "Raid run is not available on this map";
 
     if (!master->GetGroup())
         return "You must be in a group to start a raid run";
@@ -329,7 +350,7 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
             if (!tank)
                 return "No bot tank found in the group";
 
-            existing->routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank, existing->wing);
+            existing->routeStep = provider->FindFirstIncompleteStep(tank, existing->wing);
             existing->phase = RAID_RUN_RUNNING;
             existing->announcedRegen = false;
             existing->announcedBossWait = false;
@@ -342,8 +363,8 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
             std::ostringstream out;
             out << "Raid run resynced to instance — step "
                 << static_cast<uint32>(existing->routeStep + 1) << "/"
-                << static_cast<uint32>(NaxxRaidRunRoute::GetStepCount(existing->wing));
-            if (RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(existing->wing, existing->routeStep))
+                << static_cast<uint32>(provider->GetStepCount(existing->wing));
+            if (RaidRunRouteStep const* step = provider->GetStep(existing->wing, existing->routeStep))
                 out << " (" << step->name << ")";
             return out.str();
         }
@@ -356,16 +377,16 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
     RaidRunWing wing = requestedWing;
     uint8 routeStep = 0;
     if (wing == RAID_RUN_WING_NONE)
-        wing = NaxxRaidRunRoute::SuggestWing(tank);
+        wing = static_cast<RaidRunWing>(provider->SuggestWing(tank));
 
-    if (NaxxRaidRunRoute::NeedsHubPortal(tank))
+    if (provider->NeedsHubPortal(tank))
     {
         wing = RAID_RUN_WING_NAXX_ARACHNID;
-        uint8 const count = NaxxRaidRunRoute::GetStepCount(wing);
+        uint8 const count = provider->GetStepCount(wing);
         routeStep = count ? static_cast<uint8>(count - 1) : 0;
     }
     else
-        routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank, wing);
+        routeStep = provider->FindFirstIncompleteStep(tank, wing);
 
     RaidRunState& state = _states[master->GetGUID()];
     state.phase = RAID_RUN_RUNNING;
@@ -386,7 +407,7 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
     BroadcastStatus(master);
 
     std::ostringstream out;
-    out << "Raid run started — " << NaxxRaidRunRoute::GetWingName(state.wing) << " wing — " << tank->GetName()
+    out << "Raid run started — " << provider->GetWingName(state.wing) << " wing — " << tank->GetName()
         << " is leading";
     return out.str();
 }
@@ -455,13 +476,16 @@ std::string RaidRunMgr::GetStatusText(Player* master) const
     }
 
     if (state->wing != RAID_RUN_WING_NONE)
-        out << " — " << NaxxRaidRunRoute::GetWingName(state->wing) << " wing";
+        if (RaidRunRouteProvider* provider = GetProvider(master))
+            out << " — " << provider->GetWingName(state->wing) << " wing";
 
-    out << " — step " << static_cast<uint32>(state->routeStep + 1) << "/"
-        << static_cast<uint32>(NaxxRaidRunRoute::GetStepCount(state->wing));
-
-    if (RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(state->wing, state->routeStep))
-        out << " (" << step->name << ")";
+    if (RaidRunRouteProvider* provider = GetProvider(master))
+    {
+        out << " — step " << static_cast<uint32>(state->routeStep + 1) << "/"
+            << static_cast<uint32>(provider->GetStepCount(state->wing));
+        if (RaidRunRouteStep const* step = provider->GetStep(state->wing, state->routeStep))
+            out << " (" << step->name << ")";
+    }
 
     return out.str();
 }
@@ -492,20 +516,23 @@ void RaidRunMgr::BroadcastStatus(Player* master)
             case RAID_RUN_WING_COMPLETE: phase = "complete"; break;
             default: break;
         }
-        wing = NaxxRaidRunRoute::GetWingName(state->wing);
-        step = static_cast<uint32>(state->routeStep) + 1;
-        steps = NaxxRaidRunRoute::GetStepCount(state->wing);
-        if (RaidRunRouteStep const* routeStep = NaxxRaidRunRoute::GetStep(state->wing, state->routeStep))
+        if (RaidRunRouteProvider* provider = GetProvider(master))
         {
-            name = routeStep->name;
-            for (char& ch : name)
-                if (ch == ';')
-                    ch = ' ';
-            if (routeStep->bossEntry && state->announcedBossWait &&
-                sPlayerbotAIConfig.raidRunBossReadyDistance > 0.0f)
-                if (Player* tank = FindLeaderTank(master))
-                    if (!tank->IsInCombat())
-                        waiting = CountMembersNotReadyForBoss(tank, sPlayerbotAIConfig.raidRunBossReadyDistance);
+            wing = provider->GetWingName(state->wing);
+            step = static_cast<uint32>(state->routeStep) + 1;
+            steps = provider->GetStepCount(state->wing);
+            if (RaidRunRouteStep const* routeStep = provider->GetStep(state->wing, state->routeStep))
+            {
+                name = routeStep->name;
+                for (char& ch : name)
+                    if (ch == ';')
+                        ch = ' ';
+                if (routeStep->bossEntry && state->announcedBossWait &&
+                    sPlayerbotAIConfig.raidRunBossReadyDistance > 0.0f)
+                    if (Player* tank = FindLeaderTank(master))
+                        if (!tank->IsInCombat())
+                            waiting = CountMembersNotReadyForBoss(tank, sPlayerbotAIConfig.raidRunBossReadyDistance);
+            }
         }
         if (Player* tank = FindLeaderTank(master))
             dead = CountDeadMembers(tank);
@@ -609,10 +636,11 @@ bool RaidRunMgr::NeedsWipeRecovery(Player* ref) const
 void RaidRunMgr::ReviveBotsAtWingStart(Player* master)
 {
     RaidRunState const* state = GetState(master);
-    if (!state)
+    RaidRunRouteProvider* provider = GetProvider(master);
+    if (!state || !provider)
         return;
 
-    RaidRunRouteStep const* start = NaxxRaidRunRoute::GetStep(state->wing, 0);
+    RaidRunRouteStep const* start = provider->GetStep(state->wing, 0);
     ForEachMasterBot(master,
         [start](Player* bot, PlayerbotAI* /*botAI*/)
         {
@@ -679,22 +707,23 @@ void RaidRunMgr::CheckWipe(Player* master)
 void RaidRunMgr::AdvanceStep(Player* master)
 {
     RaidRunState* state = GetState(master);
-    if (!state)
+    RaidRunRouteProvider* provider = GetProvider(master);
+    if (!state || !provider)
         return;
 
     ++state->routeStep;
     state->announcedRegen = false;
     state->ClearStuckTracking();
 
-    if (state->routeStep >= NaxxRaidRunRoute::GetStepCount(state->wing))
+    if (state->routeStep >= provider->GetStepCount(state->wing))
     {
         Player* tank = FindLeaderTank(master);
-        RaidRunWing const next = tank ? NaxxRaidRunRoute::SuggestWing(tank) : RAID_RUN_WING_NONE;
+        RaidRunWing const next = tank ? static_cast<RaidRunWing>(provider->SuggestWing(tank)) : RAID_RUN_WING_NONE;
         if (tank && next != state->wing && next != RAID_RUN_WING_NONE &&
-            !NaxxRaidRunRoute::IsWingComplete(tank, next))
+            !provider->IsWingComplete(tank, next))
         {
             state->wing = next;
-            state->routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank, next);
+            state->routeStep = provider->FindFirstIncompleteStep(tank, next);
             state->phase = RAID_RUN_RUNNING;
             state->announcedRegen = false;
             BroadcastStatus(master);
@@ -713,10 +742,11 @@ void RaidRunMgr::AdvanceStep(Player* master)
 void RaidRunMgr::SyncRouteStep(Player* master, Player* bot)
 {
     RaidRunState* state = GetState(master);
-    if (!state || !bot)
+    RaidRunRouteProvider* provider = GetProvider(master);
+    if (!state || !bot || !provider)
         return;
 
-    uint8 const first = NaxxRaidRunRoute::FindFirstIncompleteStep(bot, state->wing);
+    uint8 const first = provider->FindFirstIncompleteStep(bot, state->wing);
     if (first >= state->routeStep)
         return;
 
@@ -724,8 +754,8 @@ void RaidRunMgr::SyncRouteStep(Player* master, Player* bot)
     // "passed" checks used to bounce the tank in the Faerlina U-hallway.
     for (uint8 i = first; i < state->routeStep; ++i)
     {
-        RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(state->wing, i);
-        if (step && step->bossEntry && !NaxxRaidRunRoute::IsBossEncounterDone(bot, step->bossEntry))
+        RaidRunRouteStep const* step = provider->GetStep(state->wing, i);
+        if (step && step->bossEntry && !provider->IsBossEncounterDone(bot, step->bossEntry))
         {
             state->routeStep = first;
             return;

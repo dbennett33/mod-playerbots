@@ -7,47 +7,26 @@
 #ifndef PLAYERBOTS_NAXXRAIDRUNROUTE_H
 #define PLAYERBOTS_NAXXRAIDRUNROUTE_H
 
-#include "RaidRunState.h"
-#include <cstdint>
-#include <string>
-#include <vector>
+#include "RaidRunRoute.h"
 
-class Creature;
-class GameObject;
-class Player;
-
-struct RaidRunRouteStep
-{
-    std::string name;
-    float x;
-    float y;
-    float z;
-    uint32 mapId;
-    uint32 bossEntry;
-    float arriveDistance;
-    float pullRadius;
-    float clearRadius = 0.0f;
-    uint32 portalGoEntry = 0;
-};
-
-class NaxxRaidRunRoute
+class NaxxRaidRunRouteProvider : public RaidRunRouteProvider
 {
 public:
-    static std::vector<RaidRunRouteStep> const& GetSteps(RaidRunWing wing);
-    static std::vector<RaidRunRouteStep> const& GetArachnidSteps();
-    static uint8 GetStepCount(RaidRunWing wing);
-    static RaidRunRouteStep const* GetStep(RaidRunWing wing, uint8 index);
-    static char const* GetWingName(RaidRunWing wing);
-    static RaidRunWing SuggestWing(Player* bot);
-    static bool IsAtNaxxHub(Player* bot);
-    static bool NeedsHubPortal(Player* bot);
-    static GameObject* FindWingReturnPortal(Player* bot, float range = 120.0f);
-    static bool IsWingComplete(Player* bot, RaidRunWing wing);
-    static bool IsBossAlive(Player* bot, uint32 bossEntry, float range = 250.0f);
-    static bool IsBossEncounterDone(Player* bot, uint32 bossEntry);
-    static bool IsStepComplete(Player* bot, RaidRunWing wing, uint8 index);
-    static uint8 FindFirstIncompleteStep(Player* bot, RaidRunWing wing);
-    static Creature* FindClearableTrash(Player* bot, RaidRunRouteStep const& step);
+    std::vector<RaidRunRouteStep> const& GetSteps(uint8 wing) const override;
+    std::vector<RaidRunRouteStep> const& GetArachnidSteps() const;
+    uint8 GetStepCount(uint8 wing) const override;
+    RaidRunRouteStep const* GetStep(uint8 wing, uint8 index) const override;
+    char const* GetWingName(uint8 wing) const override;
+    uint8 SuggestWing(Player* bot) const override;
+    bool IsAtHub(Player* bot) const override;
+    bool NeedsHubPortal(Player* bot) const override;
+    GameObject* FindWingReturnPortal(Player* bot, float range = 120.0f) const override;
+    bool IsWingComplete(Player* bot, uint8 wing) const override;
+    bool IsBossAlive(Player* bot, uint32 bossEntry, float range = 250.0f) const;
+    bool IsBossEncounterDone(Player* bot, uint32 bossEntry) const override;
+    bool IsStepComplete(Player* bot, uint8 wing, uint8 index) const override;
+    uint8 FindFirstIncompleteStep(Player* bot, uint8 wing) const override;
+    Creature* FindClearableTrash(Player* bot, RaidRunRouteStep const& step) const override;
 };
 
 #endif

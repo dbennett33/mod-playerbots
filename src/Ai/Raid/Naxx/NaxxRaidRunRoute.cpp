@@ -5,6 +5,7 @@
  */
 
 #include "NaxxRaidRunRoute.h"
+#include "RaidRunMgr.h"
 #include "AttackersValue.h"
 #include "CellImpl.h"
 #include "Creature.h"
@@ -170,7 +171,7 @@ bool EncounterIdForBoss(uint32 bossEntry, uint32& encounterId)
     }
 }
 
-std::vector<RaidRunRouteStep> const& StepsFor(RaidRunWing wing)
+std::vector<RaidRunRouteStep> const& StepsFor(uint8 wing)
 {
     switch (wing)
     {
@@ -245,22 +246,22 @@ bool IsClearableTrash(Creature* creature, Player* bot, uint32 skipBossEntry)
 }
 }  // namespace
 
-std::vector<RaidRunRouteStep> const& NaxxRaidRunRoute::GetSteps(RaidRunWing wing)
+std::vector<RaidRunRouteStep> const& NaxxRaidRunRouteProvider::GetSteps(uint8 wing) const
 {
-    return StepsFor(wing == RAID_RUN_WING_NONE ? RAID_RUN_WING_NAXX_ARACHNID : wing);
+    return StepsFor(wing == RAID_RUN_WING_NONE ? static_cast<uint8>(RAID_RUN_WING_NAXX_ARACHNID) : wing);
 }
 
-std::vector<RaidRunRouteStep> const& NaxxRaidRunRoute::GetArachnidSteps()
+std::vector<RaidRunRouteStep> const& NaxxRaidRunRouteProvider::GetArachnidSteps() const
 {
     return arachnidSteps;
 }
 
-uint8 NaxxRaidRunRoute::GetStepCount(RaidRunWing wing)
+uint8 NaxxRaidRunRouteProvider::GetStepCount(uint8 wing) const
 {
     return static_cast<uint8>(GetSteps(wing).size());
 }
 
-RaidRunRouteStep const* NaxxRaidRunRoute::GetStep(RaidRunWing wing, uint8 index)
+RaidRunRouteStep const* NaxxRaidRunRouteProvider::GetStep(uint8 wing, uint8 index) const
 {
     std::vector<RaidRunRouteStep> const& steps = GetSteps(wing);
     if (index >= steps.size())
@@ -269,7 +270,7 @@ RaidRunRouteStep const* NaxxRaidRunRoute::GetStep(RaidRunWing wing, uint8 index)
     return &steps[index];
 }
 
-char const* NaxxRaidRunRoute::GetWingName(RaidRunWing wing)
+char const* NaxxRaidRunRouteProvider::GetWingName(uint8 wing) const
 {
     switch (wing)
     {
@@ -282,7 +283,7 @@ char const* NaxxRaidRunRoute::GetWingName(RaidRunWing wing)
     }
 }
 
-RaidRunWing NaxxRaidRunRoute::SuggestWing(Player* bot)
+uint8 NaxxRaidRunRouteProvider::SuggestWing(Player* bot) const
 {
     if (!IsWingComplete(bot, RAID_RUN_WING_NAXX_ARACHNID))
         return RAID_RUN_WING_NAXX_ARACHNID;
@@ -290,7 +291,7 @@ RaidRunWing NaxxRaidRunRoute::SuggestWing(Player* bot)
     return RAID_RUN_WING_NAXX_CONSTRUCT;
 }
 
-bool NaxxRaidRunRoute::IsAtNaxxHub(Player* bot)
+bool NaxxRaidRunRouteProvider::IsAtHub(Player* bot) const
 {
     if (!bot || bot->GetMapId() != 533)
         return false;
@@ -298,12 +299,12 @@ bool NaxxRaidRunRoute::IsAtNaxxHub(Player* bot)
     return bot->GetExactDist2d(NAXX_HUB_X, NAXX_HUB_Y) <= NAXX_HUB_RADIUS;
 }
 
-bool NaxxRaidRunRoute::NeedsHubPortal(Player* bot)
+bool NaxxRaidRunRouteProvider::NeedsHubPortal(Player* bot) const
 {
-    return bot && IsBossEncounterDone(bot, NPC_MAEXXNA) && !IsAtNaxxHub(bot);
+    return bot && IsBossEncounterDone(bot, NPC_MAEXXNA) && !IsAtHub(bot);
 }
 
-GameObject* NaxxRaidRunRoute::FindWingReturnPortal(Player* bot, float range)
+GameObject* NaxxRaidRunRouteProvider::FindWingReturnPortal(Player* bot, float range) const
 {
     if (!bot)
         return nullptr;
@@ -328,12 +329,12 @@ GameObject* NaxxRaidRunRoute::FindWingReturnPortal(Player* bot, float range)
     return best;
 }
 
-bool NaxxRaidRunRoute::IsWingComplete(Player* bot, RaidRunWing wing)
+bool NaxxRaidRunRouteProvider::IsWingComplete(Player* bot, uint8 wing) const
 {
     return FindFirstIncompleteStep(bot, wing) >= GetStepCount(wing);
 }
 
-bool NaxxRaidRunRoute::IsBossAlive(Player* bot, uint32 bossEntry, float range)
+bool NaxxRaidRunRouteProvider::IsBossAlive(Player* bot, uint32 bossEntry, float range) const
 {
     if (!bot || !bossEntry)
         return false;
@@ -355,7 +356,7 @@ bool NaxxRaidRunRoute::IsBossAlive(Player* bot, uint32 bossEntry, float range)
     return false;
 }
 
-bool NaxxRaidRunRoute::IsBossEncounterDone(Player* bot, uint32 bossEntry)
+bool NaxxRaidRunRouteProvider::IsBossEncounterDone(Player* bot, uint32 bossEntry) const
 {
     if (!bot || !bossEntry)
         return false;
@@ -379,7 +380,7 @@ bool NaxxRaidRunRoute::IsBossEncounterDone(Player* bot, uint32 bossEntry)
     return instance->IsBossDone(encounterId);
 }
 
-Creature* NaxxRaidRunRoute::FindClearableTrash(Player* bot, RaidRunRouteStep const& step)
+Creature* NaxxRaidRunRouteProvider::FindClearableTrash(Player* bot, RaidRunRouteStep const& step) const
 {
     if (!bot || step.clearRadius <= 0.0f)
         return nullptr;
@@ -421,7 +422,7 @@ Creature* NaxxRaidRunRoute::FindClearableTrash(Player* bot, RaidRunRouteStep con
     return best;
 }
 
-bool NaxxRaidRunRoute::IsStepComplete(Player* bot, RaidRunWing wing, uint8 index)
+bool NaxxRaidRunRouteProvider::IsStepComplete(Player* bot, uint8 wing, uint8 index) const
 {
     std::vector<RaidRunRouteStep> const& steps = GetSteps(wing);
     if (!bot || index >= steps.size())
@@ -429,7 +430,7 @@ bool NaxxRaidRunRoute::IsStepComplete(Player* bot, RaidRunWing wing, uint8 index
 
     RaidRunRouteStep const& step = steps[index];
     if (step.portalGoEntry)
-        return IsAtNaxxHub(bot);
+        return IsAtHub(bot);
 
     if (step.bossEntry)
     {
@@ -445,7 +446,7 @@ bool NaxxRaidRunRoute::IsStepComplete(Player* bot, RaidRunWing wing, uint8 index
     return IsTravelStepArrived(bot, step);
 }
 
-uint8 NaxxRaidRunRoute::FindFirstIncompleteStep(Player* bot, RaidRunWing wing)
+uint8 NaxxRaidRunRouteProvider::FindFirstIncompleteStep(Player* bot, uint8 wing) const
 {
     uint8 const count = GetStepCount(wing);
     if (!bot)
@@ -457,7 +458,7 @@ uint8 NaxxRaidRunRoute::FindFirstIncompleteStep(Player* bot, RaidRunWing wing)
     {
         RaidRunRouteStep const& step = steps[i];
         if (step.portalGoEntry)
-            return IsAtNaxxHub(bot) ? count : i;
+            return IsAtHub(bot) ? count : i;
 
         if (step.bossEntry)
         {
@@ -469,4 +470,16 @@ uint8 NaxxRaidRunRoute::FindFirstIncompleteStep(Player* bot, RaidRunWing wing)
     }
 
     return count;
+}
+
+namespace
+{
+NaxxRaidRunRouteProvider naxxProvider;
+struct NaxxProviderRegistration
+{
+    NaxxProviderRegistration()
+    {
+        sRaidRunMgr.RegisterProvider(533, &naxxProvider);
+    }
+} const naxxProviderRegistration;
 }
