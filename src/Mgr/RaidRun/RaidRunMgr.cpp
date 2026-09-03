@@ -297,6 +297,7 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
             existing->leaderTankGuid = tank->GetGUID();
             AssignMainTank(master->GetGroup(), tank);
             ApplyRunStrategies(master);
+            BroadcastStatus(master);
 
             std::ostringstream out;
             out << "Raid run resynced to instance — step "
@@ -340,6 +341,7 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
 
     AssignMainTank(master->GetGroup(), tank);
     ApplyRunStrategies(master);
+    BroadcastStatus(master);
 
     std::ostringstream out;
     out << "Raid run started — " << NaxxRaidRunRoute::GetWingName(state.wing) << " wing — " << tank->GetName()
@@ -353,7 +355,7 @@ std::string RaidRunMgr::PauseRun(Player* master)
     if (!state || state->phase == RAID_RUN_IDLE)
         return "No raid run is active";
 
-    state->phase = RAID_RUN_PAUSED;
+    SetPhase(master, RAID_RUN_PAUSED);
     return "Raid run paused";
 }
 
@@ -369,9 +371,9 @@ std::string RaidRunMgr::ResumeRun(Player* master)
     if (Player* tank = FindLeaderTank(master))
         SyncRouteStep(master, tank);
 
-    state->phase = RAID_RUN_RUNNING;
     state->announcedRegen = false;
     ApplyRunStrategies(master);
+    SetPhase(master, RAID_RUN_RUNNING);
     return "Raid run resumed";
 }
 
@@ -385,6 +387,7 @@ std::string RaidRunMgr::StopRun(Player* master)
         if (Player* tank = ObjectAccessor::FindPlayer(state->leaderTankGuid))
             group->SetGroupMemberFlag(tank->GetGUID(), false, MEMBER_FLAG_MAINTANK);
 
+    SetPhase(master, RAID_RUN_IDLE);
     RemoveRunStrategies(master);
     ClearState(master);
     return "Raid run stopped";
@@ -420,10 +423,101 @@ std::string RaidRunMgr::GetStatusText(Player* master) const
     return out.str();
 }
 
+void RaidRunMgr::BroadcastStatus(Player* master)
+{
+    RaidRunState const* state = GetState(master);
+    if (!master)
+        return;
+
+    char const* phase = "idle";
+    char const* wing = "";
+    uint32 step = 0;
+    uint32 steps = 0;
+    std::string name;
+    uint32 dead = 0;
+    uint32 regen = 0;
+    uint32 waiting = 0;
+
+    if (state && state->phase != RAID_RUN_IDLE)
+    {
+        switch (state->phase)
+        {
+            case RAID_RUN_RUNNING: phase = "running"; break;
+            case RAID_RUN_PAUSED: phase = "paused"; break;
+            case RAID_RUN_REGEN: phase = "regen"; regen = 1; break;
+            case RAID_RUN_RECOVERY: phase = "recovering"; break;
+            case RAID_RUN_WING_COMPLETE: phase = "complete"; break;
+            default: break;
+        }
+        wing = NaxxRaidRunRoute::GetWingName(state->wing);
+        step = static_cast<uint32>(state->routeStep) + 1;
+        steps = NaxxRaidRunRoute::GetStepCount(state->wing);
+        if (RaidRunRouteStep const* routeStep = NaxxRaidRunRoute::GetStep(state->wing, state->routeStep))
+        {
+            name = routeStep->name;
+            for (char& ch : name)
+                if (ch == ';')
+                    ch = ' ';
+            if (routeStep->bossEntry && state->announcedBossWait &&
+                sPlayerbotAIConfig.raidRunBossReadyDistance > 0.0f)
+                if (Player* tank = FindLeaderTank(master))
+                    if (!tank->IsInCombat())
+                        waiting = CountMembersNotReadyForBoss(tank, sPlayerbotAIConfig.raidRunBossReadyDistance);
+        }
+        if (Player* tank = FindLeaderTank(master))
+            dead = CountDeadMembers(tank);
+        else
+            dead = CountDeadMembers(master);
+    }
+
+    auto buildLine = [&](std::string const& stepName)
+    {
+        std::ostringstream line;
+        line << "[RR] phase=" << phase << ";wing=" << wing << ";step=" << step << ";steps=" << steps
+            << ";name=" << stepName << ";dead=" << dead << ";regen=" << regen << ";waiting=" << waiting;
+        return line.str();
+    };
+
+    std::string text = buildLine(name);
+    while (text.size() > 255 && !name.empty())
+    {
+        name.pop_back();
+        text = buildLine(name);
+    }
+    if (text.size() > 255)
+        return;
+
+    Player* speaker = nullptr;
+    if (state && !state->leaderTankGuid.IsEmpty())
+        if (Player* tank = ObjectAccessor::FindPlayer(state->leaderTankGuid))
+            if (tank->IsAlive() && GET_PLAYERBOT_AI(tank))
+                speaker = tank;
+
+    if (!speaker && master->GetGroup())
+    {
+        for (GroupReference* ref = master->GetGroup()->GetFirstMember(); ref; ref = ref->next())
+        {
+            Player* member = ref->GetSource();
+            if (member && member->IsAlive() && GET_PLAYERBOT_AI(member))
+            {
+                speaker = member;
+                break;
+            }
+        }
+    }
+
+    if (PlayerbotAI* botAI = speaker ? GET_PLAYERBOT_AI(speaker) : nullptr)
+        botAI->TellMaster(text);
+}
+
 void RaidRunMgr::SetPhase(Player* master, RaidRunPhase phase)
 {
-    if (RaidRunState* state = GetState(master))
-        state->phase = phase;
+    RaidRunState* state = GetState(master);
+    if (!state || state->phase == phase)
+        return;
+
+    state->phase = phase;
+    BroadcastStatus(master);
 }
 
 void RaidRunMgr::AdvanceStep(Player* master)
@@ -447,12 +541,17 @@ void RaidRunMgr::AdvanceStep(Player* master)
             state->routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank, next);
             state->phase = RAID_RUN_RUNNING;
             state->announcedRegen = false;
+            BroadcastStatus(master);
             return;
         }
 
         state->phase = RAID_RUN_WING_COMPLETE;
         RemoveRunStrategies(master);
+        BroadcastStatus(master);
+        return;
     }
+
+    BroadcastStatus(master);
 }
 
 void RaidRunMgr::SyncRouteStep(Player* master, Player* bot)

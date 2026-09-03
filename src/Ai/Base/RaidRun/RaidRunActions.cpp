@@ -154,6 +154,7 @@ bool RaidRunStatusChatAction::Execute(Event event)
         return false;
 
     botAI->TellMaster(sRaidRunMgr.GetStatusText(master));
+    sRaidRunMgr.BroadcastStatus(master);
     return true;
 }
 
@@ -350,7 +351,7 @@ bool RaidRunLeaderAction::Execute(Event event)
     if (deadMembers > 0)
     {
         if (state->phase != RAID_RUN_RECOVERY)
-            state->phase = RAID_RUN_RECOVERY;
+            sRaidRunMgr.SetPhase(master, RAID_RUN_RECOVERY);
 
         bot->StopMoving();
         if (!state->announcedRecovery)
@@ -368,7 +369,7 @@ bool RaidRunLeaderAction::Execute(Event event)
 
     if (state->phase == RAID_RUN_RECOVERY)
     {
-        state->phase = RAID_RUN_REGEN;
+        sRaidRunMgr.SetPhase(master, RAID_RUN_REGEN);
         state->regenBreakStarted = time(nullptr);
         state->announcedRegen = false;
         state->announcedRecovery = false;
@@ -382,7 +383,7 @@ bool RaidRunLeaderAction::Execute(Event event)
             state->regenBreakStarted > 0 &&
             time(nullptr) - state->regenBreakStarted >= static_cast<time_t>(sPlayerbotAIConfig.raidRunRegenTimeout))
         {
-            state->phase = RAID_RUN_RUNNING;
+            sRaidRunMgr.SetPhase(master, RAID_RUN_RUNNING);
             state->announcedRegen = false;
             state->ClearStuckTracking();
             botAI->TellMaster("Regen timeout — resuming");
@@ -391,7 +392,7 @@ bool RaidRunLeaderAction::Execute(Event event)
         {
             if (state->phase != RAID_RUN_REGEN)
             {
-                state->phase = RAID_RUN_REGEN;
+                sRaidRunMgr.SetPhase(master, RAID_RUN_REGEN);
                 state->regenBreakStarted = time(nullptr);
                 if (!state->announcedRegen)
                 {
@@ -405,7 +406,7 @@ bool RaidRunLeaderAction::Execute(Event event)
 
     if (state->phase == RAID_RUN_REGEN)
     {
-        state->phase = RAID_RUN_RUNNING;
+        sRaidRunMgr.SetPhase(master, RAID_RUN_RUNNING);
         state->announcedRegen = false;
         state->ClearStuckTracking();
         botAI->TellMaster("Group ready — resuming");
@@ -446,7 +447,7 @@ bool RaidRunLeaderAction::Execute(Event event)
                 state->lastProgressAt = now;
                 if (state->stuckRetries >= 3)
                 {
-                    state->phase = RAID_RUN_PAUSED;
+                    sRaidRunMgr.SetPhase(master, RAID_RUN_PAUSED);
                     botAI->TellMaster(std::string("stuck at ") + step->name + " — run paused");
                     return false;
                 }

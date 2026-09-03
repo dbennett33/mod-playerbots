@@ -33,6 +33,7 @@ public:
     std::string ResumeRun(Player* master);
     std::string StopRun(Player* master);
     std::string GetStatusText(Player* master) const;
+    void BroadcastStatus(Player* master);
 
     void SetPhase(Player* master, RaidRunPhase phase);
     void AdvanceStep(Player* master);
