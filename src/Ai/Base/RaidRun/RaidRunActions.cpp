@@ -300,9 +300,10 @@ bool RaidRunLeaderAction::Execute(Event event)
     if (step->portalGoEntry)
         return UseNaxxPortal(step->portalGoEntry, step->x, step->y, step->z);
 
+    // Keep the step's Z. SearchForBestPath otherwise snaps onto Grobbulus's lab (Z 311).
     float distance = ServerFacade::instance().GetDistance2d(bot, step->x, step->y);
     if (distance > step->arriveDistance)
-        return MoveTo(step->mapId, step->x, step->y, step->z, false, false);
+        return MoveTo(step->mapId, step->x, step->y, step->z, false, false, false, true);
 
     if (step->bossEntry)
     {

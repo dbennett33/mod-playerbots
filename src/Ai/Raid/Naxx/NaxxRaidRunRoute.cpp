@@ -63,28 +63,34 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
 
 // Construct quarter is north of the hub. Do not waypoint hub center 3005,-3434,304.
 // Order is Patchwerk -> Grobbulus (upper lab, gate 3318,-3254) -> Gluth -> Thaddius.
-// Grobbulus sits at Z 311; the Patchwerk floor is Z 294 — mmap the ramp, do not skip Z.
-//
-// First room (Y~-3365): both packs. Second room: hug west; skip east-wall giants 3202,-3306/-3282.
-// Slime circle center 3131,-3210 r~46 — pin the rim, not the pit (melee stays out of the cloud).
-// Left around the circle (west, north) to the east door, then straight into Patchwerk 3256,-3230.
+// Grobbulus sits at Z 311 above the first rooms; the Patchwerk floor is Z 294.
+// Do not pin the first-room east wall (golem 3137,-3353 / bile 3158,-3332) — mmap climbs into the lab.
+// Stay west through both rooms, clear the south hall into the slime circle, left around the rim,
+// then the east door into Patchwerk. After Patchwerk, walk the gate and ramp (keep climbing Z).
+// Slime circle center 3131,-3210 r~46 — pin the rim, not the pit.
 std::vector<RaidRunRouteStep> const constructSteps =
 {
     { "Construct entrance", 3070.0f, -3365.0f, 298.40f, 533, 0, 12.0f, 0.0f },
     { "Construct first left", 3081.0f, -3360.0f, 298.40f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Construct first right", 3137.0f, -3353.0f, 294.05f, 533, 0, 10.0f, 0.0f, 30.0f },
+    { "Construct first north", 3095.0f, -3335.0f, 296.50f, 533, 0, 10.0f, 0.0f },
     { "Construct second left", 3088.0f, -3305.0f, 294.02f, 533, 0, 10.0f, 0.0f, 14.0f },
     { "Construct second bile", 3109.0f, -3284.0f, 294.04f, 533, 0, 10.0f, 0.0f, 12.0f },
     { "Construct hall bile", 3143.0f, -3289.0f, 293.63f, 533, 0, 10.0f, 0.0f, 12.0f },
     { "Construct hall golems", 3164.0f, -3276.0f, 294.90f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Construct slime south", 3131.0f, -3252.0f, 294.15f, 533, 0, 10.0f, 0.0f, 30.0f },
+    { "Construct east giants", 3202.0f, -3294.0f, 292.68f, 533, 0, 10.0f, 0.0f, 18.0f },
+    { "Construct slime SW", 3110.0f, -3248.0f, 294.15f, 533, 0, 10.0f, 0.0f, 22.0f },
     { "Construct slime west", 3095.0f, -3215.0f, 294.15f, 533, 0, 10.0f, 0.0f, 26.0f },
-    { "Construct slime north", 3128.0f, -3180.0f, 294.15f, 533, 0, 10.0f, 0.0f, 28.0f },
+    { "Construct slime north", 3128.0f, -3180.0f, 294.15f, 533, 0, 10.0f, 0.0f, 24.0f },
+    { "Construct slime NE", 3160.0f, -3195.0f, 294.15f, 533, 0, 10.0f, 0.0f, 22.0f },
+    { "Construct slime SE", 3155.0f, -3228.0f, 294.15f, 533, 0, 10.0f, 0.0f, 20.0f },
     { "Construct slime door", 3185.0f, -3220.0f, 294.06f, 533, 0, 10.0f, 0.0f },
     { "Patchwerk room", 3220.0f, -3224.0f, 294.06f, 533, 0, 10.0f, 0.0f, 28.0f },
     { "Patchwerk", 3256.36f, -3230.33f, 294.06f, 533, 16028, 12.0f, 45.0f, 45.0f },
     { "Patchwerk gate", 3318.0f, -3254.0f, 293.35f, 533, 0, 12.0f, 0.0f },
+    { "Grobbulus hall giants", 3332.0f, -3312.0f, 292.68f, 533, 0, 10.0f, 0.0f, 22.0f },
     { "Grobbulus ramp", 3295.0f, -3285.0f, 300.00f, 533, 0, 12.0f, 0.0f },
+    { "Grobbulus ramp mid", 3285.0f, -3315.0f, 305.00f, 533, 0, 12.0f, 0.0f },
+    { "Grobbulus ramp top", 3265.0f, -3345.0f, 309.00f, 533, 0, 12.0f, 0.0f },
     { "Grobbulus", 3227.58f, -3378.30f, 311.33f, 533, 15931, 12.0f, 45.0f, 40.0f },
     { "Gluth hall", 3285.0f, -3200.0f, 294.15f, 533, 0, 12.0f, 0.0f },
     { "Gluth", 3283.09f, -3156.96f, 297.79f, 533, 15932, 12.0f, 45.0f, 35.0f },
@@ -210,12 +216,18 @@ bool IsTravelStepPassed(Player* bot, std::vector<RaidRunRouteStep> const& steps,
     if (step->clearRadius > 0.0f)
         return false;
 
+    // Only later pins before the next boss. Standing in Grobbulus's lab (Z 311) matches that
+    // boss pin in 2D and used to skip the whole Patchwerk-floor path.
     for (uint8 i = index + 1; i < steps.size(); ++i)
     {
         RaidRunRouteStep const& later = steps[i];
-        if (ServerFacade::instance().IsDistanceLessOrEqualThan(
+        if (std::fabs(bot->GetPositionZ() - later.z) <= 10.0f &&
+            ServerFacade::instance().IsDistanceLessOrEqualThan(
                 ServerFacade::instance().GetDistance2d(bot, later.x, later.y), later.arriveDistance))
             return true;
+
+        if (later.bossEntry)
+            break;
     }
 
     float const botToBoss = bot->GetExactDist2d(nextBoss->x, nextBoss->y);
@@ -432,6 +444,10 @@ Creature* NaxxRaidRunRoute::FindClearableTrash(Player* bot, RaidRunRouteStep con
             continue;
 
         if (creature->GetExactDist2d(step.x, step.y) > step.clearRadius)
+            continue;
+
+        // Construct / Grobbulus floors stack in XY. 2D radius must not pull the other lab.
+        if (std::fabs(creature->GetPositionZ() - step.z) > 8.0f)
             continue;
 
         float const dist = bot->GetDistance(creature);
