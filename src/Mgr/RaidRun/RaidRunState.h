@@ -16,7 +16,8 @@ enum RaidRunPhase : uint8
     RAID_RUN_RUNNING = 1,
     RAID_RUN_PAUSED = 2,
     RAID_RUN_REGEN = 3,
-    RAID_RUN_WING_COMPLETE = 4
+    RAID_RUN_WING_COMPLETE = 4,
+    RAID_RUN_RECOVERY = 5
 };
 
 enum RaidRunWing : uint8
@@ -35,6 +36,7 @@ struct RaidRunState
     time_t regenBreakStarted = 0;
     bool announcedRegen = false;
     bool announcedBossWait = false;
+    bool announcedRecovery = false;
     uint8 noPathAnnouncedStep = 255;
     float lastProgressX = 0.f;
     float lastProgressY = 0.f;

@@ -205,8 +205,11 @@ bool RaidGroupReadyValue::Calculate()
     for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
     {
         Player* member = ref->GetSource();
-        if (!member || !member->IsAlive() || member->GetMapId() != bot->GetMapId())
+        if (!member || member->GetMapId() != bot->GetMapId())
             continue;
+
+        if (!member->IsAlive())
+            return false;
 
         if (ServerFacade::instance().GetDistance2d(member, anchor) > sPlayerbotAIConfig.sightDistance)
             continue;

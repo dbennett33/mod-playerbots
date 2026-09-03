@@ -43,6 +43,7 @@ public:
     static Player* FindLeaderTank(Player* master);
     static void AssignMainTank(Group* group, Player* tank);
     static uint32 CountMembersNotReadyForBoss(Player* tank, float range);
+    static uint32 CountDeadMembers(Player* tank);
     static bool IsInActiveRaidRun(Player* bot);
 
 private:

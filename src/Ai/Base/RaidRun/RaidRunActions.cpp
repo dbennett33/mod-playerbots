@@ -134,7 +134,8 @@ bool RaidRunLeaderAction::isUseful()
     if (!state || state->leaderTankGuid != bot->GetGUID())
         return false;
 
-    if (state->phase != RAID_RUN_RUNNING && state->phase != RAID_RUN_REGEN)
+    if (state->phase != RAID_RUN_RUNNING && state->phase != RAID_RUN_REGEN &&
+        state->phase != RAID_RUN_RECOVERY)
         return false;
 
     if (bot->IsInCombat())
@@ -273,7 +274,8 @@ bool RaidRunLeaderAction::Execute(Event event)
         return true;
     }
 
-    if (NaxxRaidRunRoute::IsStepComplete(bot, state->wing, state->routeStep))
+    if (state->phase != RAID_RUN_RECOVERY &&
+        NaxxRaidRunRoute::IsStepComplete(bot, state->wing, state->routeStep))
     {
         RaidRunWing const prevWing = state->wing;
         sRaidRunMgr.AdvanceStep(master);
@@ -296,6 +298,36 @@ bool RaidRunLeaderAction::Execute(Event event)
             }
         }
         return true;
+    }
+
+    uint32 const deadMembers = RaidRunMgr::CountDeadMembers(bot);
+    if (deadMembers > 0)
+    {
+        if (state->phase != RAID_RUN_RECOVERY)
+            state->phase = RAID_RUN_RECOVERY;
+
+        bot->StopMoving();
+        if (!state->announcedRecovery)
+        {
+            std::ostringstream out;
+            out << deadMembers << " member";
+            if (deadMembers != 1)
+                out << "s";
+            out << " dead — recovering before we continue";
+            botAI->TellMaster(out.str());
+            state->announcedRecovery = true;
+        }
+        return false;
+    }
+
+    if (state->phase == RAID_RUN_RECOVERY)
+    {
+        state->phase = RAID_RUN_REGEN;
+        state->regenBreakStarted = time(nullptr);
+        state->announcedRegen = false;
+        state->announcedRecovery = false;
+        state->ClearStuckTracking();
+        return false;
     }
 
     if (!AI_VALUE(bool, "raid group ready"))

@@ -141,11 +141,37 @@ uint32 RaidRunMgr::CountMembersNotReadyForBoss(Player* tank, float range)
         if (member->GetMap() != tank->GetMap())
             continue;
 
-        if (tank->GetExactDist2d(member) > range || member->isMoving())
+        if (!member->IsAlive() || tank->GetExactDist2d(member) > range || member->isMoving())
             ++missing;
     }
 
     return missing;
+}
+
+uint32 RaidRunMgr::CountDeadMembers(Player* tank)
+{
+    if (!tank)
+        return 0;
+
+    Group* group = tank->GetGroup();
+    if (!group)
+        return 0;
+
+    uint32 dead = 0;
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (!member || !member->IsInWorld())
+            continue;
+
+        if (member->GetMap() != tank->GetMap())
+            continue;
+
+        if (!member->IsAlive())
+            ++dead;
+    }
+
+    return dead;
 }
 
 bool RaidRunMgr::IsInActiveRaidRun(Player* bot)
@@ -277,6 +303,7 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
     state.regenBreakStarted = 0;
     state.announcedRegen = false;
     state.announcedBossWait = false;
+    state.announcedRecovery = false;
     state.noPathAnnouncedStep = 255;
     state.ClearStuckTracking();
 
@@ -345,6 +372,7 @@ std::string RaidRunMgr::GetStatusText(Player* master) const
         case RAID_RUN_RUNNING: out << "running"; break;
         case RAID_RUN_PAUSED: out << "paused"; break;
         case RAID_RUN_REGEN: out << "regen break"; break;
+        case RAID_RUN_RECOVERY: out << "recovering"; break;
         case RAID_RUN_WING_COMPLETE: out << "wing complete"; break;
         default: out << "unknown"; break;
     }
