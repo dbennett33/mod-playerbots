@@ -238,7 +238,11 @@ bool RaidRunLeaderAction::PullTarget(Creature* target, Event event)
         engageDistance = 18.0f;
 
     if (bot->GetDistance(target) > engageDistance)
-        return MoveTo(target);
+    {
+        // Keep the target's Z. MoveTo(WorldObject) remaps height and can snap onto Grobbulus.
+        return MoveTo(target->GetMapId(), target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(),
+            false, false, false, true);
+    }
 
     PullStrategy* strategy = PullStrategy::Get(botAI);
     if (!strategy)
@@ -542,7 +546,11 @@ bool RaidRunFollowTankAction::Execute(Event /*event*/)
     }
 
     float const maxDistance = std::max(sPlayerbotAIConfig.followDistance, 8.0f);
-    return Follow(tank, maxDistance);
+    float const angle = GetFollowAngle();
+    float const destX = tank->GetPositionX() + cos(angle) * maxDistance;
+    float const destY = tank->GetPositionY() + sin(angle) * maxDistance;
+    // Follow() uses 2D mmap and will walk the Grobbulus navmesh above the Construct halls.
+    return MoveTo(tank->GetMapId(), destX, destY, tank->GetPositionZ(), false, false, false, true);
 }
 
 bool RaidRunRegenAction::isUseful()

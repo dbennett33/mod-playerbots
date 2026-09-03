@@ -1764,19 +1764,31 @@ const Movement::PointsArray MovementAction::SearchForBestPath(float x, float y, 
 {
     bool found = false;
     modified_z = INVALID_HEIGHT;
+    bool const raidRun = RaidRunMgr::IsInActiveRaidRun(bot);
+    auto const sameFloor = [z, raidRun](float candidateZ) -> bool
+    {
+        if (candidateZ == INVALID_HEIGHT)
+            return false;
+
+        if (!raidRun)
+            return true;
+
+        // Grobbulus's lab stacks over the Construct halls. Never pick a floor ~one storey off dest Z.
+        return std::fabs(candidateZ - z) <= 8.0f;
+    };
     float tempZ = bot->GetMapHeight(x, y, z);
     PathGenerator gen(bot);
     gen.CalculatePath(x, y, tempZ);
     Movement::PointsArray result = gen.GetPath();
     float min_length = gen.getPathLength();
     int typeOk = PATHFIND_NORMAL | PATHFIND_INCOMPLETE;
-    if ((gen.GetPathType() & typeOk) && abs(tempZ - z) < 0.5f)
+    if ((gen.GetPathType() & typeOk) && sameFloor(tempZ) && abs(tempZ - z) < 0.5f)
     {
         modified_z = tempZ;
         return result;
     }
     // Start searching
-    if (gen.GetPathType() & typeOk)
+    if ((gen.GetPathType() & typeOk) && sameFloor(tempZ))
     {
         modified_z = tempZ;
         found = true;
@@ -1785,7 +1797,7 @@ const Movement::PointsArray MovementAction::SearchForBestPath(float x, float y, 
     for (float delta = step; count < maxSearchCount / 2 + 1; count++, delta += step)
     {
         tempZ = bot->GetMapHeight(x, y, z + delta);
-        if (tempZ == INVALID_HEIGHT)
+        if (!sameFloor(tempZ))
         {
             continue;
         }
@@ -1802,7 +1814,7 @@ const Movement::PointsArray MovementAction::SearchForBestPath(float x, float y, 
     for (float delta = -step; count < maxSearchCount; count++, delta -= step)
     {
         tempZ = bot->GetMapHeight(x, y, z + delta);
-        if (tempZ == INVALID_HEIGHT)
+        if (!sameFloor(tempZ))
         {
             continue;
         }
