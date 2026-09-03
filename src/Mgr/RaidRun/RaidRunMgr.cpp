@@ -148,6 +148,26 @@ uint32 RaidRunMgr::CountMembersNotReadyForBoss(Player* tank, float range)
     return missing;
 }
 
+bool RaidRunMgr::IsInActiveRaidRun(Player* bot)
+{
+    if (!bot)
+        return false;
+
+    PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
+    if (!botAI)
+        return false;
+
+    Player* master = botAI->GetMaster();
+    if (!master)
+        return false;
+
+    RaidRunState const* state = instance().GetState(master);
+    if (!state)
+        return false;
+
+    return state->phase != RAID_RUN_IDLE && state->phase != RAID_RUN_WING_COMPLETE;
+}
+
 void RaidRunMgr::ApplyRunStrategies(Player* master)
 {
     RaidRunState const* state = GetState(master);

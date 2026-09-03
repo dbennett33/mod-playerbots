@@ -24,6 +24,7 @@
 #include "Position.h"
 #include "PositionValue.h"
 #include "Random.h"
+#include "RaidRunMgr.h"
 #include "ServerFacade.h"
 #include "SharedDefines.h"
 #include "SpellAuraEffects.h"
@@ -74,8 +75,19 @@ bool MovementAction::JumpTo(uint32 mapId, float x, float y, float z, MovementPri
     if (!IsMovingAllowed())
         return false;
 
-    if (ShouldKeepCurrentMove(x, y, z, priority))
-        return true;
+    if (RaidRunMgr::IsInActiveRaidRun(bot))
+    {
+        if (ShouldKeepCurrentMove(x, y, z, priority))
+            return true;
+    }
+    else
+    {
+        if (IsDuplicateMove(x, y, z))
+            return false;
+
+        if (IsWaitingForLastMove(priority))
+            return false;
+    }
 
     float speed = bot->GetSpeed(MOVE_RUN);
     MotionMaster& mm = *bot->GetMotionMaster();
@@ -180,8 +192,19 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool /*idle
     {
         return false;
     }
-    if (ShouldKeepCurrentMove(x, y, z, priority))
-        return true;
+    if (RaidRunMgr::IsInActiveRaidRun(bot))
+    {
+        if (ShouldKeepCurrentMove(x, y, z, priority))
+            return true;
+    }
+    else
+    {
+        if (IsDuplicateMove(x, y, z))
+            return false;
+
+        if (IsWaitingForLastMove(priority))
+            return false;
+    }
 
     bool generatePath = !bot->IsFlying() && !bot->isSwimming();
     bool disableMoveSplinePath =
@@ -1115,6 +1138,12 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
     if (!target)
         return false;
 
+    bool const inRaidRun = RaidRunMgr::IsInActiveRaidRun(bot);
+    if (!inRaidRun && !bot->InBattleground() &&
+        ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
+                                                           sPlayerbotAIConfig.followDistance))
+        return false;
+
     /*
     if (!bot->InBattleground()
         && ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target->GetPositionX(),
@@ -1232,15 +1261,31 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
             return MoveTo(target, sPlayerbotAIConfig.followDistance);
     }
 
-    if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
+    if (inRaidRun)
     {
-        Unit* currentTarget = ServerFacade::instance().GetFollowTarget(bot);
-        if (currentTarget && currentTarget->GetGUID() == target->GetGUID())
-            return true;
+        if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
+        {
+            Unit* currentTarget = ServerFacade::instance().GetFollowTarget(bot);
+            if (currentTarget && currentTarget->GetGUID() == target->GetGUID())
+                return true;
+        }
     }
+    else if (ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
+                                                               sPlayerbotAIConfig.followDistance))
+        return false;
 
     if (target->IsFriendlyTo(bot) && bot->IsMounted() && AI_VALUE(GuidVector, "all targets").empty())
         distance += angle;
+
+    if (!inRaidRun)
+    {
+        if (!bot->InBattleground() &&
+            ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
+                                                               sPlayerbotAIConfig.followDistance))
+            return false;
+
+        bot->HandleEmoteCommand(0);
+    }
 
     if (bot->IsSitState())
         bot->SetStandState(UNIT_STAND_STATE_STAND);
@@ -1252,7 +1297,14 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
     }
 
     ClearIdleState();
-    AI_VALUE(LastMovement&, "last movement").Set(target);
+    if (inRaidRun)
+        AI_VALUE(LastMovement&, "last movement").Set(target);
+    else if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
+    {
+        Unit* currentTarget = ServerFacade::instance().GetChaseTarget(bot);
+        if (currentTarget && currentTarget->GetGUID() == target->GetGUID())
+            return false;
+    }
 
     if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() != FOLLOW_MOTION_TYPE)
         bot->GetMotionMaster()->Clear();
@@ -1792,7 +1844,7 @@ void MovementAction::DoMovePoint(Unit* unit, float x, float y, float z, bool gen
         unit->UpdatePosition(unit->GetPositionX(), unit->GetPositionY(), gZ, false);
     }
 
-    if (!backwards)
+    if (!backwards && RaidRunMgr::IsInActiveRaidRun(bot))
     {
         float destX = 0.0f;
         float destY = 0.0f;
