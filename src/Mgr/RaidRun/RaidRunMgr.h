@@ -45,6 +45,8 @@ public:
     static uint32 CountMembersNotReadyForBoss(Player* tank, float range);
     static uint32 CountDeadMembers(Player* tank);
     static bool IsInActiveRaidRun(Player* bot);
+    static bool HasLivingResurrector(Player* bot);
+    static bool ShouldSuppressSpiritRelease(Player* bot);
 
 private:
     RaidRunMgr() = default;

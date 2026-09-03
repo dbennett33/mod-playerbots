@@ -194,6 +194,37 @@ bool RaidRunMgr::IsInActiveRaidRun(Player* bot)
     return state->phase != RAID_RUN_IDLE && state->phase != RAID_RUN_WING_COMPLETE;
 }
 
+bool RaidRunMgr::HasLivingResurrector(Player* bot)
+{
+    if (!bot)
+        return false;
+
+    Group* group = bot->GetGroup();
+    if (!group)
+        return false;
+
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (!member || !member->IsAlive() || !member->IsInWorld())
+            continue;
+
+        if (member->GetMap() != bot->GetMap())
+            continue;
+
+        uint8 const cls = member->getClass();
+        if (cls == CLASS_PRIEST || cls == CLASS_PALADIN || cls == CLASS_SHAMAN || cls == CLASS_DRUID)
+            return true;
+    }
+
+    return false;
+}
+
+bool RaidRunMgr::ShouldSuppressSpiritRelease(Player* bot)
+{
+    return IsInActiveRaidRun(bot) && HasLivingResurrector(bot);
+}
+
 void RaidRunMgr::ApplyRunStrategies(Player* master)
 {
     RaidRunState const* state = GetState(master);

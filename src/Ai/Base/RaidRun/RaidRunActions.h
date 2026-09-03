@@ -78,4 +78,13 @@ public:
     bool isUseful() override;
 };
 
+class RaidRunResurrectAction : public MovementAction
+{
+public:
+    RaidRunResurrectAction(PlayerbotAI* botAI) : MovementAction(botAI, "raid run resurrect") {}
+
+    bool Execute(Event event) override;
+    bool isUseful() override;
+};
+
 #endif

@@ -12,6 +12,7 @@
 #include "MapMgr.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
+#include "RaidRunMgr.h"
 #include "RandomPlayerbotMgr.h"
 #include "ServerFacade.h"
 
@@ -198,6 +199,9 @@ bool FindCorpseAction::Execute(Event /*event*/)
 bool FindCorpseAction::isUseful()
 {
     if (bot->InBattleground())
+        return false;
+
+    if (RaidRunMgr::ShouldSuppressSpiritRelease(bot))
         return false;
 
     return bot->GetCorpse();

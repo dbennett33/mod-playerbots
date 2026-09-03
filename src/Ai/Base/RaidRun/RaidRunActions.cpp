@@ -13,6 +13,7 @@
 #include "GameObject.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
+#include "Group.h"
 #include "Log.h"
 #include "NaxxRaidRunRoute.h"
 #include "NaxxSpellIds.h"
@@ -60,6 +61,37 @@ void UseGameObjectPacket(Player* bot, GameObject* go)
     WorldPacket data(CMSG_GAMEOBJ_USE);
     data << go->GetGUID();
     bot->GetSession()->HandleGameObjectUseOpcode(data);
+}
+
+uint8 ResurrectTargetPriority(Player* member, Player* master)
+{
+    if (master && member->GetGUID() == master->GetGUID())
+        return 0;
+
+    if (PlayerbotAI::IsHeal(member, true))
+        return 1;
+
+    if (PlayerbotAI::IsTank(member, true))
+        return 2;
+
+    return 3;
+}
+
+char const* ResurrectActionName(uint8 cls)
+{
+    switch (cls)
+    {
+        case CLASS_PRIEST:
+            return "resurrection";
+        case CLASS_PALADIN:
+            return "redemption";
+        case CLASS_SHAMAN:
+            return "ancestral spirit";
+        case CLASS_DRUID:
+            return "revive";
+        default:
+            return nullptr;
+    }
 }
 }
 
@@ -539,4 +571,70 @@ bool RaidRunRegenAction::Execute(Event event)
     }
 
     return false;
+}
+
+bool RaidRunResurrectAction::isUseful()
+{
+    if (!bot->IsAlive() || bot->IsInCombat())
+        return false;
+
+    if (!ResurrectActionName(bot->getClass()))
+        return false;
+
+    Player* master = GetMaster();
+    if (!master)
+        return false;
+
+    RaidRunState const* state = sRaidRunMgr.GetState(master);
+    return state && state->phase == RAID_RUN_RECOVERY;
+}
+
+bool RaidRunResurrectAction::Execute(Event /*event*/)
+{
+    Player* master = GetMaster();
+    Group* group = bot->GetGroup();
+    if (!group)
+        return false;
+
+    Player* best = nullptr;
+    uint8 bestPriority = 255;
+    float bestDistance = 0.0f;
+    float const spellRange = std::max(botAI->GetRange("spell") - 3.0f, 15.0f);
+
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (!member || member == bot || !member->IsInWorld())
+            continue;
+
+        if (member->GetMap() != bot->GetMap())
+            continue;
+
+        if (member->getDeathState() != DeathState::Corpse)
+            continue;
+
+        if (member->isResurrectRequested())
+            continue;
+
+        uint8 const priority = ResurrectTargetPriority(member, master);
+        float const dist = bot->GetDistance(member);
+        if (!best || priority < bestPriority || (priority == bestPriority && dist < bestDistance))
+        {
+            best = member;
+            bestPriority = priority;
+            bestDistance = dist;
+        }
+    }
+
+    if (!best)
+        return false;
+
+    if (bestDistance > spellRange)
+        return MoveTo(best->GetMapId(), best->GetPositionX(), best->GetPositionY(), best->GetPositionZ());
+
+    char const* actionName = ResurrectActionName(bot->getClass());
+    if (!actionName)
+        return false;
+
+    return botAI->CastSpell(std::string(actionName), best);
 }

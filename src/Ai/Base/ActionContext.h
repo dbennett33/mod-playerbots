@@ -283,6 +283,7 @@ public:
         creators["raid run leader"] = &ActionContext::raid_run_leader;
         creators["raid run follow tank"] = &ActionContext::raid_run_follow_tank;
         creators["raid run regen"] = &ActionContext::raid_run_regen;
+        creators["raid run resurrect"] = &ActionContext::raid_run_resurrect;
     }
 
 private:
@@ -493,6 +494,7 @@ private:
     static Action* raid_run_leader(PlayerbotAI* botAI) { return new RaidRunLeaderAction(botAI); }
     static Action* raid_run_follow_tank(PlayerbotAI* botAI) { return new RaidRunFollowTankAction(botAI); }
     static Action* raid_run_regen(PlayerbotAI* botAI) { return new RaidRunRegenAction(botAI); }
+    static Action* raid_run_resurrect(PlayerbotAI* botAI) { return new RaidRunResurrectAction(botAI); }
 };
 
 #endif

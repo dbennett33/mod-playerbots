@@ -25,6 +25,7 @@ public:
 
     std::string const getName() override { return "raid run follow"; }
     std::vector<NextAction> getDefaultActions() override;
+    void InitTriggers(std::vector<TriggerNode*>& triggers) override;
 };
 
 class RaidRunRegenStrategy : public Strategy

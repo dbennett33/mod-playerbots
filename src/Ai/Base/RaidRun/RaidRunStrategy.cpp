@@ -9,12 +9,23 @@
 
 std::vector<NextAction> RaidRunLeaderStrategy::getDefaultActions()
 {
-    return { NextAction("raid run leader", ACTION_HIGH) };
+    return {
+        NextAction("raid run resurrect", ACTION_HIGH + 1.0f),
+        NextAction("raid run leader", ACTION_HIGH)
+    };
 }
 
 std::vector<NextAction> RaidRunFollowStrategy::getDefaultActions()
 {
     return { NextAction("raid run follow tank", ACTION_DEFAULT) };
+}
+
+void RaidRunFollowStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
+{
+    triggers.push_back(new TriggerNode(
+        "often",
+        { NextAction("raid run resurrect", ACTION_HIGH) }
+    ));
 }
 
 void RaidRunRegenStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
