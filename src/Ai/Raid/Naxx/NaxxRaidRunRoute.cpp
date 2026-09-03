@@ -34,6 +34,12 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
     { "Arachnid entrance", 3175.0f, -3476.0f, 287.50f, 533, 0, 12.0f, 0.0f },
     // Anub spawn (east end). Do not use room center 3273,-3477 — that drags him off the door.
     { "Anub'Rekhan", 3308.59f, -3476.29f, 287.16f, 533, 15956, 10.0f, 40.0f },
+    // After Anub, walk back west through his room, then south down the ramp to the Faerlina
+    // corridor. Without these pins mmap tries to cut straight through the wall (22-unit Z drop).
+    { "Anub exit", 3210.0f, -3476.0f, 287.16f, 533, 0, 12.0f, 0.0f },
+    { "Anub-Faerlina ramp top", 3270.0f, -3530.0f, 287.16f, 533, 0, 12.0f, 0.0f },
+    { "Anub-Faerlina ramp mid", 3300.0f, -3555.0f, 276.0f, 533, 0, 12.0f, 0.0f },
+    { "Anub-Faerlina ramp bot", 3320.0f, -3570.0f, 265.0f, 533, 0, 12.0f, 0.0f },
     { "Faerlina corridor", 3330.0f, -3580.0f, 265.0f, 533, 0, 12.0f, 0.0f },
     // Stay east of her 20yd detection while walking south to the packs behind the platform.
     { "Faerlina east wall", 3385.0f, -3588.0f, 261.08f, 533, 0, 12.0f, 0.0f },
@@ -65,27 +71,19 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
 // Order is Patchwerk -> Grobbulus (upper lab, gate 3318,-3254) -> Gluth -> Thaddius.
 // Grobbulus sits at Z 311 above the Patchwerk floor (Z 294) — they share the same XY footprint.
 //
-// Route: enter, immediately hug the WEST wall (X~3075) north through both rooms; do NOT cut east
-// across the first room (the east packs at X~3137/3157/3202 share XY with Grobbulus's lab above).
-// West-wall mobs: golems 3075/3087 (Y~-3354/-3368), golem 3088 (Y~-3305), then left-corridor
-// mad-scientist cluster (X~3000-3030, Y~-3248/-3140).  Skip east stitched giants (X~3202).
-// Slime circle center 3131,-3210 r~46 — pin the rim west then north; door is east at X~3185.
-// After Patchwerk gate, hug the north wall east (not south) to reach the Grobbulus ramp.
+// Route: enter, take the WEST walkway (X~3095) north — left of the east packs, not on the wall.
+// X~3075 sits in pillar recesses under the vats; the raid piles into that corner.
+// East packs at X~3137/3157/3202 share XY with Grobbulus's lab (Z 311) — do not pin them.
+// Left packs: golems 3075/3087 (Y~-3354/-3368), golem 3088 (Y~-3305), bile 3109 (Y~-3284).
+// Skip west alcove 3000,-3248 and east stitched giants 3202. Slime circle 3131,-3210 r~46.
 std::vector<RaidRunRouteStep> const constructSteps =
 {
-    // ── Room 1: entrance, hug west wall north ─────────────────────────────────
     { "Construct entrance", 3070.0f, -3365.0f, 298.40f, 533, 0, 12.0f, 0.0f },
-    { "Construct R1 west A", 3075.0f, -3360.0f, 298.40f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Construct R1 west B", 3075.0f, -3340.0f, 297.00f, 533, 0, 10.0f, 0.0f },
-    // ── Room 2: doorway, keep hugging west ────────────────────────────────────
-    { "Construct R2 west A", 3075.0f, -3315.0f, 295.00f, 533, 0, 10.0f, 0.0f },
-    { "Construct R2 west B", 3088.0f, -3305.0f, 294.02f, 533, 0, 10.0f, 0.0f, 14.0f },
-    // ── Left corridor leading to slime circle ─────────────────────────────────
-    { "Construct left bile", 3043.0f, -3210.0f, 293.35f, 533, 0, 10.0f, 0.0f, 18.0f },
-    { "Construct left sci A", 3005.0f, -3248.0f, 294.15f, 533, 0, 10.0f, 0.0f, 22.0f },
-    { "Construct left sci B", 3010.0f, -3178.0f, 294.15f, 533, 0, 10.0f, 0.0f, 22.0f },
-    { "Construct left bile N", 3014.0f, -3151.0f, 294.08f, 533, 0, 10.0f, 0.0f, 14.0f },
-    // ── Slime circle: rim west → north → east door ───────────────────────────
+    { "Construct first left", 3082.0f, -3358.0f, 298.40f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Construct first walk", 3095.0f, -3338.0f, 296.50f, 533, 0, 10.0f, 0.0f },
+    { "Construct second door", 3095.0f, -3320.0f, 295.00f, 533, 0, 10.0f, 0.0f },
+    { "Construct second left", 3088.0f, -3305.0f, 294.02f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Construct second bile", 3109.0f, -3284.0f, 294.04f, 533, 0, 10.0f, 0.0f, 12.0f },
     { "Construct slime west", 3095.0f, -3215.0f, 294.15f, 533, 0, 10.0f, 0.0f, 26.0f },
     { "Construct slime north", 3128.0f, -3180.0f, 294.15f, 533, 0, 10.0f, 0.0f, 24.0f },
     { "Construct slime NE", 3160.0f, -3195.0f, 294.15f, 533, 0, 10.0f, 0.0f, 22.0f },
