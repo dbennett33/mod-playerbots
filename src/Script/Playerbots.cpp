@@ -17,6 +17,7 @@
 #include "PlayerbotGuildMgr.h"
 #include "PlayerbotSpellRepository.h"
 #include "PlayerbotWorldThreadProcessor.h"
+#include "NaxxRaidRunRoute.h"
 #include "RaidRunMgr.h"
 #include "RandomPlayerbotMgr.h"
 #include "ScriptMgr.h"
@@ -546,4 +547,5 @@ void AddPlayerbotsScripts()
     AddSC_IcecrownBotScripts();
     AddSC_RubySanctumBotScripts();
     AddSC_randombot_level_mgr();
+    RegisterNaxxRaidRunRoute();
 }

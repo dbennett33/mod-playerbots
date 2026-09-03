@@ -30,4 +30,6 @@ public:
     Creature* FindClearableTrash(Player* bot, RaidRunRouteStep const& step) const override;
 };
 
+void RegisterNaxxRaidRunRoute();
+
 #endif

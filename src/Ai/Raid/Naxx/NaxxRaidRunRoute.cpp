@@ -562,14 +562,8 @@ uint8 NaxxRaidRunRouteProvider::FindFirstIncompleteStep(Player* bot, uint8 wing)
     return count;
 }
 
-namespace
+void RegisterNaxxRaidRunRoute()
 {
-NaxxRaidRunRouteProvider naxxProvider;
-struct NaxxProviderRegistration
-{
-    NaxxProviderRegistration()
-    {
-        sRaidRunMgr.RegisterProvider(533, &naxxProvider);
-    }
-} const naxxProviderRegistration;
+    static NaxxRaidRunRouteProvider naxxProvider;
+    sRaidRunMgr.RegisterProvider(533, &naxxProvider);
 }
