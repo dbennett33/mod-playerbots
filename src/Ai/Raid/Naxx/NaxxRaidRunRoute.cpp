@@ -68,30 +68,26 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
 };
 
 // Construct quarter is north of the hub. Do not waypoint hub center 3005,-3434,304.
-// Order is Patchwerk -> Grobbulus (upper lab, gate 3318,-3254) -> Gluth -> Thaddius.
-// Grobbulus sits at Z 311 above the Patchwerk floor (Z 294) — they share the same XY footprint.
+// Order is Patchwerk -> Grobbulus (upper lab) -> Gluth -> Thaddius.
+// Grobbulus sits at Z 311 above the Patchwerk floor (Z 294).
 //
-// Route: enter, take the WEST walkway (X~3095) north — left of the east packs, not on the wall.
-// X~3075 sits in pillar recesses under the vats; the raid piles into that corner.
-// East packs at X~3137/3157/3202 share XY with Grobbulus's lab (Z 311) — do not pin them.
-// Left packs: golems 3075/3087 (Y~-3354/-3368), golem 3088 (Y~-3305), bile 3109 (Y~-3284).
-// Skip west alcove 3000,-3248 and east stitched giants 3202. Slime circle 3131,-3210 r~46.
+// Pins through Patchwerk gate are in-game .gps dumps along the left walkway (entrance,
+// rooms, slime west rim, west alcove, north packs). Then Patchwerk, then the gate.
 std::vector<RaidRunRouteStep> const constructSteps =
 {
-    { "Construct entrance", 3070.0f, -3365.0f, 298.40f, 533, 0, 12.0f, 0.0f },
-    { "Construct first left", 3082.0f, -3358.0f, 298.40f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Construct first walk", 3095.0f, -3338.0f, 296.50f, 533, 0, 10.0f, 0.0f },
-    { "Construct second door", 3095.0f, -3320.0f, 295.00f, 533, 0, 10.0f, 0.0f },
-    { "Construct second left", 3088.0f, -3305.0f, 294.02f, 533, 0, 10.0f, 0.0f, 14.0f },
-    { "Construct second bile", 3109.0f, -3284.0f, 294.04f, 533, 0, 10.0f, 0.0f, 12.0f },
-    { "Construct slime west", 3095.0f, -3215.0f, 294.15f, 533, 0, 10.0f, 0.0f, 26.0f },
-    { "Construct slime north", 3128.0f, -3180.0f, 294.15f, 533, 0, 10.0f, 0.0f, 24.0f },
-    { "Construct slime NE", 3160.0f, -3195.0f, 294.15f, 533, 0, 10.0f, 0.0f, 22.0f },
-    { "Construct slime SE", 3155.0f, -3228.0f, 294.15f, 533, 0, 10.0f, 0.0f, 20.0f },
-    { "Construct slime door", 3185.0f, -3220.0f, 294.06f, 533, 0, 10.0f, 0.0f },
+    { "Construct entrance", 3045.63f, -3395.20f, 299.39f, 533, 0, 12.0f, 0.0f },
+    { "Construct first left", 3088.10f, -3352.53f, 299.39f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Construct second", 3092.59f, -3313.92f, 293.63f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Construct hall", 3127.32f, -3266.78f, 294.17f, 533, 0, 10.0f, 0.0f, 20.0f },
+    { "Construct slime SW", 3111.25f, -3236.74f, 294.06f, 533, 0, 10.0f, 0.0f, 22.0f },
+    { "Construct slime west", 3072.34f, -3220.36f, 294.06f, 533, 0, 10.0f, 0.0f, 22.0f },
+    { "Construct west alcove", 3017.19f, -3230.86f, 294.06f, 533, 0, 10.0f, 0.0f, 22.0f },
+    { "Construct west north", 3020.01f, -3162.89f, 294.06f, 533, 0, 10.0f, 0.0f, 22.0f },
+    { "Construct north packs", 3088.70f, -3103.67f, 294.06f, 533, 0, 10.0f, 0.0f, 24.0f },
+    { "Construct north south", 3112.43f, -3137.38f, 294.06f, 533, 0, 10.0f, 0.0f, 18.0f },
     { "Patchwerk room", 3220.0f, -3224.0f, 294.06f, 533, 0, 10.0f, 0.0f, 28.0f },
     { "Patchwerk", 3256.36f, -3230.33f, 294.06f, 533, 16028, 12.0f, 45.0f, 45.0f },
-    { "Patchwerk gate", 3318.0f, -3254.0f, 293.35f, 533, 0, 12.0f, 0.0f },
+    { "Patchwerk gate", 3317.40f, -3238.70f, 294.06f, 533, 0, 12.0f, 0.0f },
     { "Grobbulus hall giants", 3332.0f, -3312.0f, 292.68f, 533, 0, 10.0f, 0.0f, 22.0f },
     { "Grobbulus ramp", 3295.0f, -3285.0f, 300.00f, 533, 0, 12.0f, 0.0f },
     { "Grobbulus ramp mid", 3285.0f, -3315.0f, 305.00f, 533, 0, 12.0f, 0.0f },
