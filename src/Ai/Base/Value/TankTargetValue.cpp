@@ -7,10 +7,58 @@
 #include "TankTargetValue.h"
 #include "AiObjectContext.h"
 #include "AttackersValue.h"
+#include "Creature.h"
 #include "Group.h"
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
 #include "Strategy.h"
+
+namespace
+{
+bool IsDungeonOrRaidBoss(Unit* unit)
+{
+    Creature* creature = unit ? unit->ToCreature() : nullptr;
+    return creature && (creature->IsDungeonBoss() || creature->isWorldBoss());
+}
+
+bool VictimIsMainTank(Unit* attacker, PlayerbotAI* botAI)
+{
+    Unit* victim = attacker ? attacker->GetVictim() : nullptr;
+    Player* player = victim ? victim->ToPlayer() : nullptr;
+    return player && botAI->IsMainTank(player);
+}
+
+bool IsLooseAdd(Unit* attacker, PlayerbotAI* botAI)
+{
+    if (!attacker)
+        return false;
+
+    Unit* victim = attacker->GetVictim();
+    if (!victim)
+        return true;
+
+    Player* player = victim->ToPlayer();
+    if (!player)
+        return true;
+
+    return !botAI->IsTank(player);
+}
+
+// Assist tank: peel loose/non-MT mobs. Do not sit on a boss the main tank already has.
+int32 AssistTankRank(Unit* unit, PlayerbotAI* botAI)
+{
+    if (IsLooseAdd(unit, botAI))
+        return 3;
+
+    if (!VictimIsMainTank(unit, botAI))
+        return 2;
+
+    if (!IsDungeonOrRaidBoss(unit))
+        return 1;
+
+    return 0;
+}
+}  // namespace
 
 class FindTargetForTankStrategy : public FindNonCcTargetStrategy
 {
@@ -71,6 +119,14 @@ public:
     bool IsBetter(Unit* new_unit, Unit* old_unit)
     {
         Player* bot = botAI->GetBot();
+        if (botAI->IsAssistTank(bot))
+        {
+            int32 const newRank = AssistTankRank(new_unit, botAI);
+            int32 const oldRank = AssistTankRank(old_unit, botAI);
+            if (newRank != oldRank)
+                return newRank > oldRank;
+        }
+
         // if group has multiple tanks, explicit main tank just focus on the current target
         Unit* currentTarget = botAI->GetAiObjectContext()->GetValue<Unit*>("current target")->Get();
         if (currentTarget && botAI->IsExplicitMainTank(bot) && botAI->GetGroupTankNum(bot) > 1)
@@ -132,5 +188,10 @@ Unit* TankTargetValue::Calculate()
 
     // FindTargetForTankStrategy strategy(botAI);
     FindTankTargetSmartStrategy strategy(botAI);
-    return FindTarget(&strategy);
+    Unit* target = FindTarget(&strategy);
+    if (target && botAI->IsAssistTank(botAI->GetBot()) && IsDungeonOrRaidBoss(target) &&
+        VictimIsMainTank(target, botAI))
+        return nullptr;
+
+    return target;
 }

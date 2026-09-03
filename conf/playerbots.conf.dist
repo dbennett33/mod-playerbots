@@ -303,6 +303,12 @@ AiPlayerbot.TwoRoundsGearInit = 0
 # Default: 0 (disabled)
 AiPlayerbot.FreeMethodLoot = 0
 
+# Bots walk to loot corpses and chests.
+# 0 = do not loot (stops the raid spreading out). The main tank still loots bosses
+#     so group/master loot windows open.
+# 1 = loot nearby corpses (default)
+AiPlayerbot.LootCorpses = 1
+
 # Bots' Roll level bots will use for items they Need (0 = pass, 1 = greed, 2 = need)
 # Default: 1 (greed)
 AiPlayerbot.LootNeedRollLevel = 1

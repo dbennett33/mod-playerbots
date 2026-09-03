@@ -5,13 +5,34 @@
  */
 
 #include "LootObjectStack.h"
+#include "Creature.h"
 #include "LootMgr.h"
 #include "Object.h"
 #include "ObjectAccessor.h"
+#include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
 #include "Unit.h"
 
 #define MAX_LOOT_OBJECT_COUNT 200
+
+namespace
+{
+bool IsMainTankBossCorpse(Player* bot, ObjectGuid guid)
+{
+    if (!bot || !guid.IsAnyTypeCreature())
+        return false;
+
+    if (!PlayerbotAI::IsTank(bot, true))
+        return false;
+
+    if (bot->GetGroup() && !PlayerbotAI::IsMainTank(bot))
+        return false;
+
+    PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
+    Creature* creature = botAI ? botAI->GetCreature(guid) : nullptr;
+    return creature && (creature->IsDungeonBoss() || creature->isWorldBoss());
+}
+}  // namespace
 
 LootTarget::LootTarget(ObjectGuid guid) : guid(guid), asOfTime(time(nullptr)) {}
 
@@ -350,6 +371,9 @@ bool LootObject::IsLootPossible(Player* bot)
 
 bool LootObjectStack::Add(ObjectGuid guid)
 {
+    if (!sPlayerbotAIConfig.lootCorpses && guid.IsAnyTypeCreature() && !IsMainTankBossCorpse(bot, guid))
+        return false;
+
     if (availableLoot.size() >= MAX_LOOT_OBJECT_COUNT)
     {
         availableLoot.shrink(time(nullptr) - 30);

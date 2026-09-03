@@ -10,6 +10,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "LootObjectStack.h"
+#include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
 
@@ -39,7 +40,13 @@ bool AddAllLootAction::Execute(Event /*event*/)
 
 bool AddLootAction::isUseful() { return true; }
 
-bool AddAllLootAction::isUseful() { return true; }
+bool AddAllLootAction::isUseful()
+{
+    if (sPlayerbotAIConfig.lootCorpses)
+        return true;
+
+    return PlayerbotAI::IsTank(bot, true);
+}
 
 bool AddAllLootAction::AddLoot(ObjectGuid guid) { return AI_VALUE(LootObjectStack*, "available loot")->Add(guid); }
 
