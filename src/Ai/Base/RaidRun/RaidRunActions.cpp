@@ -22,6 +22,7 @@
 #include "PathGenerator.h"
 #include "PullStrategy.h"
 #include "RaidRunMgr.h"
+#include "RaidRunRecorder.h"
 #include "RaidRunState.h"
 #include "ServerFacade.h"
 #include "WorldPacket.h"
@@ -153,6 +154,19 @@ bool RaidRunStatusChatAction::Execute(Event event)
         return false;
 
     botAI->TellMaster(sRaidRunMgr.GetStatusText(master));
+    return true;
+}
+
+bool RaidRunRecordChatAction::Execute(Event event)
+{
+    if (!IsMasterCommand(botAI, event))
+        return false;
+
+    Player* master = GetMaster();
+    if (!master)
+        return false;
+
+    botAI->TellMaster(sRaidRunRecorder.HandleCommand(master, event.getParam()));
     return true;
 }
 

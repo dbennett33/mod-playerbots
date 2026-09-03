@@ -158,6 +158,7 @@ public:
         creators["raid pause"] = &ChatTriggerContext::raid_pause;
         creators["raid stop"] = &ChatTriggerContext::raid_stop;
         creators["raid status"] = &ChatTriggerContext::raid_status;
+        creators["raid record"] = &ChatTriggerContext::raid_record;
     }
 
 private:
@@ -294,6 +295,7 @@ private:
     static Trigger* raid_pause(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid pause"); }
     static Trigger* raid_stop(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid stop"); }
     static Trigger* raid_status(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid status"); }
+    static Trigger* raid_record(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid record"); }
 };
 
 #endif

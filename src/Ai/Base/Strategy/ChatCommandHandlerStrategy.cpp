@@ -82,6 +82,7 @@ void ChatCommandHandlerStrategy::InitTriggers(std::vector<TriggerNode*>& trigger
     triggers.push_back(new TriggerNode("raid pause", { NextAction("raid run pause chat", relevance) }));
     triggers.push_back(new TriggerNode("raid stop", { NextAction("raid run stop chat", relevance) }));
     triggers.push_back(new TriggerNode("raid status", { NextAction("raid run status chat", relevance) }));
+    triggers.push_back(new TriggerNode("raid record", { NextAction("raid run record chat", relevance) }));
 }
 
 // Commands where trigger name == action name.

@@ -215,6 +215,7 @@ public:
         creators["raid run pause chat"] = &ChatActionContext::raid_run_pause_chat;
         creators["raid run stop chat"] = &ChatActionContext::raid_run_stop_chat;
         creators["raid run status chat"] = &ChatActionContext::raid_run_status_chat;
+        creators["raid run record chat"] = &ChatActionContext::raid_run_record_chat;
     }
 
 private:
@@ -337,6 +338,7 @@ private:
     static Action* raid_run_pause_chat(PlayerbotAI* botAI) { return new RaidRunPauseChatAction(botAI); }
     static Action* raid_run_stop_chat(PlayerbotAI* botAI) { return new RaidRunStopChatAction(botAI); }
     static Action* raid_run_status_chat(PlayerbotAI* botAI) { return new RaidRunStatusChatAction(botAI); }
+    static Action* raid_run_record_chat(PlayerbotAI* botAI) { return new RaidRunRecordChatAction(botAI); }
 };
 
 #endif

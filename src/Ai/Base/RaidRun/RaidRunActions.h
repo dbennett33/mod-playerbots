@@ -44,6 +44,14 @@ public:
     bool Execute(Event event) override;
 };
 
+class RaidRunRecordChatAction : public Action
+{
+public:
+    RaidRunRecordChatAction(PlayerbotAI* botAI) : Action(botAI, "raid run record chat") {}
+
+    bool Execute(Event event) override;
+};
+
 class RaidRunLeaderAction : public MovementAction
 {
 public:
