@@ -448,7 +448,7 @@ AiPlayerbot.RaidRunRegenTimeout = 120
 #
 # Boss pulls wait until every group member in the instance is this close to the tank.
 # Naxx rooms lock their doors on pull. 0 = do not wait.
-AiPlayerbot.RaidRunBossReadyDistance = 40
+AiPlayerbot.RaidRunBossReadyDistance = 25
 
 #
 #

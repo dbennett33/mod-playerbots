@@ -141,7 +141,7 @@ uint32 RaidRunMgr::CountMembersNotReadyForBoss(Player* tank, float range)
         if (member->GetMap() != tank->GetMap())
             continue;
 
-        if (tank->GetExactDist2d(member) > range)
+        if (tank->GetExactDist2d(member) > range || member->isMoving())
             ++missing;
     }
 

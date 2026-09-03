@@ -134,7 +134,7 @@ bool PlayerbotAIConfig::Initialize()
     raidRunHealthThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunHealthThreshold", 85);
     raidRunManaThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunManaThreshold", 65);
     raidRunRegenTimeout = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunRegenTimeout", 120);
-    raidRunBossReadyDistance = sConfigMgr->GetOption<float>("AiPlayerbot.RaidRunBossReadyDistance", 40.0f);
+    raidRunBossReadyDistance = sConfigMgr->GetOption<float>("AiPlayerbot.RaidRunBossReadyDistance", 25.0f);
     autoSaveMana = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoSaveMana", true);
     saveManaThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.SaveManaThreshold", 60);
     switch (sConfigMgr->GetOption<uint32>("AiPlayerbot.AutoGreaterBlessings", 1))
