@@ -103,6 +103,10 @@ std::vector<RaidRunRouteStep> const constructSteps =
     { "Gluth", 3283.09f, -3156.96f, 297.79f, 533, 15932, 12.0f, 45.0f, 35.0f },
     { "Gluth gate", 3339.16f, -3100.64f, 296.81f, 533, 0, 12.0f, 0.0f },
     { "Thaddius gate", 3421.86f, -3017.51f, 295.62f, 533, 0, 12.0f, 0.0f },
+    // Walk to the low platform before pulling; bots on Feugen/Stalagg high bridges (Z 312)
+    // cannot see Thaddius below (Z 302) so the phase-transition trigger never fires.
+    // This pin forces mmap to descend to the correct floor first.
+    { "Thaddius platform", 3480.0f, -2960.0f, 302.91f, 533, 0, 15.0f, 0.0f },
     { "Thaddius", 3513.84f, -2926.55f, 302.91f, 533, 15928, 15.0f, 80.0f, 0.0f }
 };
 
