@@ -307,6 +307,7 @@ bool RaidRunLeaderAction::Execute(Event event)
     if (!state)
         return false;
 
+    sRaidRunMgr.CheckWipe(master);
     if (state->phase == RAID_RUN_PAUSED)
         return false;
 
@@ -498,6 +499,8 @@ bool RaidRunFollowTankAction::isUseful()
     if (!master)
         return false;
 
+    sRaidRunMgr.CheckWipe(master);
+
     RaidRunState const* state = sRaidRunMgr.GetState(master);
     if (!state || state->phase == RAID_RUN_IDLE || state->phase == RAID_RUN_WING_COMPLETE)
         return false;
@@ -505,7 +508,7 @@ bool RaidRunFollowTankAction::isUseful()
     if (state->leaderTankGuid == bot->GetGUID())
         return false;
 
-    if (bot->IsInCombat())
+    if (!bot->IsAlive() || bot->IsInCombat())
         return false;
 
     return true;
@@ -600,8 +603,13 @@ bool RaidRunResurrectAction::isUseful()
     if (!master)
         return false;
 
+    sRaidRunMgr.CheckWipe(master);
+
     RaidRunState const* state = sRaidRunMgr.GetState(master);
-    return state && state->phase == RAID_RUN_RECOVERY;
+    if (!state || state->phase != RAID_RUN_RECOVERY || state->wipeRecovery)
+        return false;
+
+    return true;
 }
 
 bool RaidRunResurrectAction::Execute(Event /*event*/)

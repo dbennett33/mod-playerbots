@@ -120,6 +120,7 @@ public:
     uint32 raidRunManaThreshold;
     uint32 raidRunRegenTimeout;
     float raidRunBossReadyDistance;
+    uint32 raidRunWipeMode;
     bool autoSaveMana;
     uint32 saveManaThreshold;
     AutoPartyBuffMode autoGreaterBlessings;

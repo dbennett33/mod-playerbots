@@ -449,6 +449,12 @@ AiPlayerbot.RaidRunRegenTimeout = 120
 # Boss pulls wait until every group member in the instance is this close to the tank.
 # Naxx rooms lock their doors on pull. 0 = do not wait.
 AiPlayerbot.RaidRunBossReadyDistance = 25
+#
+# Wipe recovery when the whole raid is dead (or nobody left can resurrect):
+# 0 = pause and report (default). Whisper raid go after you revive.
+# 1 = instant-revive bots at the current wing entrance, then pause until raid go.
+# 2 = ghost corpse-run. Naxx re-entry is the Sapphiron-side portal and is slow; opt-in.
+AiPlayerbot.RaidRunWipeMode = 0
 
 #
 #

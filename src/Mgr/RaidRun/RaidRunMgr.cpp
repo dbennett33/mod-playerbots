@@ -45,6 +45,30 @@ void ForEachMasterBot(Player* master, std::function<void(Player*, PlayerbotAI*)>
             fn(bot, botAI);
     }
 }
+
+void TellMasterFromRaidBot(Player* master, std::string const& text)
+{
+    if (!master || text.empty())
+        return;
+
+    Player* speaker = nullptr;
+    if (RaidRunState const* state = RaidRunMgr::instance().GetState(master))
+        if (!state->leaderTankGuid.IsEmpty())
+            if (Player* tank = ObjectAccessor::FindPlayer(state->leaderTankGuid))
+                if (GET_PLAYERBOT_AI(tank))
+                    speaker = tank;
+
+    if (!speaker)
+        ForEachMasterBot(master,
+            [&](Player* bot, PlayerbotAI* /*botAI*/)
+            {
+                if (!speaker)
+                    speaker = bot;
+            });
+
+    if (PlayerbotAI* botAI = speaker ? GET_PLAYERBOT_AI(speaker) : nullptr)
+        botAI->TellMaster(text);
+}
 }
 
 RaidRunState* RaidRunMgr::GetState(Player* master)
@@ -222,7 +246,22 @@ bool RaidRunMgr::HasLivingResurrector(Player* bot)
 
 bool RaidRunMgr::ShouldSuppressSpiritRelease(Player* bot)
 {
-    return IsInActiveRaidRun(bot) && HasLivingResurrector(bot);
+    if (!bot)
+        return false;
+
+    PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
+    if (!botAI)
+        return false;
+
+    Player* master = botAI->GetMaster();
+    RaidRunState const* state = master ? instance().GetState(master) : nullptr;
+    if (!state || state->phase == RAID_RUN_IDLE || state->phase == RAID_RUN_WING_COMPLETE)
+        return false;
+
+    if (state->wipeRecovery)
+        return false;
+
+    return HasLivingResurrector(bot);
 }
 
 void RaidRunMgr::ApplyRunStrategies(Player* master)
@@ -294,6 +333,7 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
             existing->phase = RAID_RUN_RUNNING;
             existing->announcedRegen = false;
             existing->announcedBossWait = false;
+            existing->wipeRecovery = false;
             existing->leaderTankGuid = tank->GetGUID();
             AssignMainTank(master->GetGroup(), tank);
             ApplyRunStrategies(master);
@@ -338,6 +378,8 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
     state.announcedRecovery = false;
     state.noPathAnnouncedStep = 255;
     state.ClearStuckTracking();
+    state.lastWipeCheck = 0;
+    state.wipeRecovery = false;
 
     AssignMainTank(master->GetGroup(), tank);
     ApplyRunStrategies(master);
@@ -372,6 +414,7 @@ std::string RaidRunMgr::ResumeRun(Player* master)
         SyncRouteStep(master, tank);
 
     state->announcedRegen = false;
+    state->wipeRecovery = false;
     ApplyRunStrategies(master);
     SetPhase(master, RAID_RUN_RUNNING);
     return "Raid run resumed";
@@ -504,6 +547,18 @@ void RaidRunMgr::BroadcastStatus(Player* master)
                 break;
             }
         }
+        if (!speaker)
+        {
+            for (GroupReference* ref = master->GetGroup()->GetFirstMember(); ref; ref = ref->next())
+            {
+                Player* member = ref->GetSource();
+                if (member && GET_PLAYERBOT_AI(member))
+                {
+                    speaker = member;
+                    break;
+                }
+            }
+        }
     }
 
     if (PlayerbotAI* botAI = speaker ? GET_PLAYERBOT_AI(speaker) : nullptr)
@@ -518,6 +573,107 @@ void RaidRunMgr::SetPhase(Player* master, RaidRunPhase phase)
 
     state->phase = phase;
     BroadcastStatus(master);
+}
+
+bool RaidRunMgr::NeedsWipeRecovery(Player* ref) const
+{
+    if (!ref || !ref->GetGroup())
+        return false;
+
+    uint32 dead = 0;
+    uint32 alive = 0;
+    for (GroupReference* it = ref->GetGroup()->GetFirstMember(); it; it = it->next())
+    {
+        Player* member = it->GetSource();
+        if (!member || !member->IsInWorld())
+            continue;
+
+        if (member->GetMap() != ref->GetMap())
+            continue;
+
+        if (member->IsAlive())
+            ++alive;
+        else
+            ++dead;
+    }
+
+    if (dead == 0)
+        return false;
+
+    if (alive == 0)
+        return true;
+
+    return !HasLivingResurrector(ref);
+}
+
+void RaidRunMgr::ReviveBotsAtWingStart(Player* master)
+{
+    RaidRunState const* state = GetState(master);
+    if (!state)
+        return;
+
+    RaidRunRouteStep const* start = NaxxRaidRunRoute::GetStep(state->wing, 0);
+    ForEachMasterBot(master,
+        [start](Player* bot, PlayerbotAI* /*botAI*/)
+        {
+            if (bot->IsAlive())
+                return;
+
+            bot->ResurrectPlayer(1.0f);
+            bot->SpawnCorpseBones();
+            if (start)
+                bot->TeleportTo(start->mapId, start->x, start->y, start->z, bot->GetOrientation());
+        });
+}
+
+void RaidRunMgr::HandleWipe(Player* master)
+{
+    RaidRunState* state = GetState(master);
+    if (!state || state->wipeRecovery)
+        return;
+
+    state->wipeRecovery = true;
+
+    uint32 const mode = sPlayerbotAIConfig.raidRunWipeMode;
+    if (mode == 1)
+        ReviveBotsAtWingStart(master);
+
+    if (state->phase != RAID_RUN_PAUSED)
+        SetPhase(master, RAID_RUN_PAUSED);
+    else
+        BroadcastStatus(master);
+
+    if (mode == 1)
+        TellMasterFromRaidBot(master, "wipe — bots revived at wing entrance (whisper raid go when ready)");
+    else if (mode == 2)
+        TellMasterFromRaidBot(master, "wipe — ghost run (whisper raid go when back)");
+    else
+        TellMasterFromRaidBot(master, "wipe — run paused (revive and whisper raid go)");
+}
+
+void RaidRunMgr::CheckWipe(Player* master)
+{
+    RaidRunState* state = GetState(master);
+    if (!state || state->wipeRecovery)
+        return;
+
+    if (state->phase == RAID_RUN_IDLE || state->phase == RAID_RUN_WING_COMPLETE)
+        return;
+
+    time_t const now = time(nullptr);
+    if (state->lastWipeCheck > 0 && now - state->lastWipeCheck < 5)
+        return;
+
+    state->lastWipeCheck = now;
+
+    Player* ref = FindLeaderTank(master);
+    if (!ref)
+        ref = master;
+
+    if (!NeedsWipeRecovery(ref))
+        return;
+
+    HandleWipe(master);
 }
 
 void RaidRunMgr::AdvanceStep(Player* master)

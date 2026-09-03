@@ -42,6 +42,8 @@ struct RaidRunState
     float lastProgressY = 0.f;
     time_t lastProgressAt = 0;
     uint8 stuckRetries = 0;
+    time_t lastWipeCheck = 0;
+    bool wipeRecovery = false;
 
     void ClearStuckTracking()
     {

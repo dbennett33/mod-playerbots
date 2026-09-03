@@ -36,6 +36,7 @@ public:
     void BroadcastStatus(Player* master);
 
     void SetPhase(Player* master, RaidRunPhase phase);
+    void CheckWipe(Player* master);
     void AdvanceStep(Player* master);
     void SyncRouteStep(Player* master, Player* bot);
     void ApplyRunStrategies(Player* master);
@@ -53,6 +54,9 @@ private:
     RaidRunMgr() = default;
 
     void ClearState(Player* master);
+    void HandleWipe(Player* master);
+    bool NeedsWipeRecovery(Player* ref) const;
+    void ReviveBotsAtWingStart(Player* master);
     std::unordered_map<ObjectGuid, RaidRunState> _states;
 };
 
