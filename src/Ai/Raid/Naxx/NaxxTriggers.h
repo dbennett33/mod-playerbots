@@ -64,6 +64,13 @@ private:
     static constexpr uint32 CloudRotationDelayMs = 15000;
 };
 
+class EmbalmingSlimeMeleeTrigger : public Trigger
+{
+public:
+    EmbalmingSlimeMeleeTrigger(PlayerbotAI* ai) : Trigger(ai, "embalming slime melee") {}
+    bool IsActive() override;
+};
+
 //class HeiganMeleeTrigger : public Trigger
 //{
 //public:

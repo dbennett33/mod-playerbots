@@ -12,6 +12,7 @@
 #include "GenericActions.h"
 #include "MovementActions.h"
 #include "NaxxBossHelper.h"
+#include "NaxxSpellIds.h"
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
 
@@ -60,6 +61,15 @@ public:
 
 private:
     float distance;
+};
+
+class EmbalmingSlimeStayClearAction : public MoveAwayFromCreatureAction
+{
+public:
+    EmbalmingSlimeStayClearAction(PlayerbotAI* ai)
+        : MoveAwayFromCreatureAction(ai, "embalming slime stay clear", NaxxSpellIds::NpcEmbalmingSlime, 18.0f)
+    {
+    }
 };
 
 //class HeiganDanceAction : public MovementAction

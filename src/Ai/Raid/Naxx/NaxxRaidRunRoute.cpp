@@ -25,6 +25,7 @@ namespace
 //
 // Faerlina -> Maexxna is a U-shaped hallway (web south, west, south, then east). A straight line from
 // Faerlina toward Maexxna hits the room's SE wall and clips through, skipping the trash packs.
+// Hallway pins use clearRadius so the tank stops on each spider pack instead of running through.
 //
 // Faerlina room cultists (15980) / acolytes (15981) are in formation with her (groupAI member-assist).
 // Pulling her with packs up brings the rest of the room. Path east wall, then south, then west.
@@ -43,29 +44,44 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
     { "Grand Widow Faerlina", 3353.25f, -3620.10f, 261.08f, 533, 15953, 10.0f, 40.0f, 70.0f },
     { "Faerlina south", 3350.0f, -3660.0f, 261.08f, 533, 0, 12.0f, 0.0f },
     { "Faerlina web", 3318.0f, -3692.0f, 259.10f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna ramp", 3298.0f, -3710.0f, 268.00f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna landing", 3240.0f, -3690.0f, 287.16f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna descent", 3235.0f, -3745.0f, 281.00f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna lower hall", 3220.0f, -3795.0f, 274.03f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna west hall", 3148.0f, -3782.0f, 274.03f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna south corner", 3112.0f, -3880.0f, 267.60f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna south ramp", 3224.0f, -3877.0f, 284.56f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna south hall", 3310.0f, -3880.0f, 294.66f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna gate", 3410.0f, -3824.0f, 294.75f, 533, 0, 12.0f, 0.0f },
+    { "Maexxna ramp", 3298.0f, -3710.0f, 268.00f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Maexxna landing", 3240.0f, -3690.0f, 287.16f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Maexxna descent", 3235.0f, -3745.0f, 281.00f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Maexxna descent floor", 3244.5f, -3768.7f, 276.50f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Maexxna lower hall", 3220.0f, -3795.0f, 274.03f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Maexxna west skitters", 3171.0f, -3802.8f, 273.95f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Maexxna west hall", 3148.0f, -3782.0f, 274.03f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Maexxna south corner", 3112.0f, -3880.0f, 267.60f, 533, 0, 10.0f, 0.0f, 20.0f },
+    { "Maexxna south ramp", 3224.0f, -3877.0f, 284.56f, 533, 0, 10.0f, 0.0f, 12.0f },
+    { "Maexxna south venoms", 3284.7f, -3898.3f, 294.66f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Maexxna south hall", 3310.0f, -3880.0f, 294.66f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Maexxna gate", 3410.0f, -3824.0f, 294.75f, 533, 0, 10.0f, 0.0f, 16.0f },
     { "Maexxna", 3511.38f, -3921.58f, 299.51f, 533, 15952, 10.0f, 40.0f },
     // GO 181575 casts 28444 to hub 3005.51,-3434.64,304. Do not walk the wing backwards.
     { "Maexxna portal", 3465.16f, -3940.45f, 308.79f, 533, 0, 8.0f, 0.0f, 0.0f, 181575 }
 };
 
 // Construct quarter is north of the hub. Do not waypoint hub center 3005,-3434,304.
-// Order is Patchwerk (hallway) -> Grobbulus (upper lab, gate 3318,-3254) -> Gluth -> Thaddius.
+// Order is Patchwerk -> Grobbulus (upper lab, gate 3318,-3254) -> Gluth -> Thaddius.
 // Grobbulus sits at Z 311; the Patchwerk floor is Z 294 — mmap the ramp, do not skip Z.
+//
+// First room (Y~-3365): both packs. Second room: hug west; skip east-wall giants 3202,-3306/-3282.
+// Slime circle center 3131,-3210 r~46 — pin the rim, not the pit (melee stays out of the cloud).
+// Left around the circle (west, north) to the east door, then straight into Patchwerk 3256,-3230.
 std::vector<RaidRunRouteStep> const constructSteps =
 {
     { "Construct entrance", 3070.0f, -3365.0f, 298.40f, 533, 0, 12.0f, 0.0f },
-    { "Construct hall golems", 3137.0f, -3353.0f, 294.05f, 533, 0, 10.0f, 0.0f, 20.0f },
-    { "Construct hall giants", 3164.0f, -3276.0f, 294.90f, 533, 0, 10.0f, 0.0f, 22.0f },
-    { "Patchwerk slimes", 3140.0f, -3212.0f, 294.15f, 533, 0, 10.0f, 0.0f, 28.0f },
+    { "Construct first left", 3081.0f, -3360.0f, 298.40f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Construct first right", 3137.0f, -3353.0f, 294.05f, 533, 0, 10.0f, 0.0f, 30.0f },
+    { "Construct second left", 3088.0f, -3305.0f, 294.02f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Construct second bile", 3109.0f, -3284.0f, 294.04f, 533, 0, 10.0f, 0.0f, 12.0f },
+    { "Construct hall bile", 3143.0f, -3289.0f, 293.63f, 533, 0, 10.0f, 0.0f, 12.0f },
+    { "Construct hall golems", 3164.0f, -3276.0f, 294.90f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Construct slime south", 3131.0f, -3252.0f, 294.15f, 533, 0, 10.0f, 0.0f, 30.0f },
+    { "Construct slime west", 3095.0f, -3215.0f, 294.15f, 533, 0, 10.0f, 0.0f, 26.0f },
+    { "Construct slime north", 3128.0f, -3180.0f, 294.15f, 533, 0, 10.0f, 0.0f, 28.0f },
+    { "Construct slime door", 3185.0f, -3220.0f, 294.06f, 533, 0, 10.0f, 0.0f },
+    { "Patchwerk room", 3220.0f, -3224.0f, 294.06f, 533, 0, 10.0f, 0.0f, 28.0f },
     { "Patchwerk", 3256.36f, -3230.33f, 294.06f, 533, 16028, 12.0f, 45.0f, 45.0f },
     { "Patchwerk gate", 3318.0f, -3254.0f, 293.35f, 533, 0, 12.0f, 0.0f },
     { "Grobbulus ramp", 3295.0f, -3285.0f, 300.00f, 533, 0, 12.0f, 0.0f },
@@ -91,8 +107,15 @@ constexpr uint32 NPC_FAERLINA = 15953;
 constexpr uint32 NPC_MAEXXNA = 15952;
 constexpr uint32 NPC_NAXXRAMAS_FOLLOWER = 16505;
 constexpr uint32 NPC_NAXXRAMAS_WORSHIPPER = 16506;
+constexpr uint32 NPC_DREAD_CREEPER = 15974;
+constexpr uint32 NPC_CARRION_SPINNER = 15975;
+constexpr uint32 NPC_VENOM_STALKER = 15976;
+constexpr uint32 NPC_POISONOUS_SKITTERER = 15977;
+constexpr uint32 NPC_CRYPT_REAVER = 15978;
+constexpr uint32 NPC_TOMB_HORROR = 15979;
 constexpr uint32 NPC_NAXXRAMAS_CULTIST = 15980;
 constexpr uint32 NPC_NAXXRAMAS_ACOLYTE = 15981;
+constexpr uint32 NPC_NECRO_STALKER = 16453;
 constexpr uint32 NPC_PATCHWORK_GOLEM = 16017;
 constexpr uint32 NPC_BILE_RETCHER = 16018;
 constexpr uint32 NPC_MAD_SCIENTIST = 16020;
@@ -214,7 +237,11 @@ bool IsEncounterAdd(uint32 entry)
 
 bool IsArachnidTrash(uint32 entry)
 {
-    return entry == NPC_NAXXRAMAS_CULTIST || entry == NPC_NAXXRAMAS_ACOLYTE;
+    return entry == NPC_NAXXRAMAS_CULTIST || entry == NPC_NAXXRAMAS_ACOLYTE
+        || entry == NPC_DREAD_CREEPER || entry == NPC_CARRION_SPINNER
+        || entry == NPC_VENOM_STALKER || entry == NPC_POISONOUS_SKITTERER
+        || entry == NPC_CRYPT_REAVER || entry == NPC_TOMB_HORROR
+        || entry == NPC_NECRO_STALKER;
 }
 
 bool IsConstructTrash(uint32 entry)

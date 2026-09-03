@@ -98,6 +98,9 @@ namespace NaxxSpellIds
     SPELL_INFECTED_WOUND                = 29306,
     SPELL_CHOW_SEARCHER                 = 28404
 */
+    // Construct trash — Embalming Slime poison cloud; melee stays on the rim.
+    static constexpr uint32 NpcEmbalmingSlime = 16024;
+
     // Maexxna
     static constexpr uint32 NpcWebWrap = 16486;
     static constexpr uint32 WebWrapStun = 28622;

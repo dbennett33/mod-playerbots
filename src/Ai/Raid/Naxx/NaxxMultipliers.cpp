@@ -43,6 +43,21 @@ float GrobbulusMultiplier::GetValue(Action* action)
     return 1.0f;
 }
 
+float EmbalmingSlimeMultiplier::GetValue(Action* action)
+{
+    if (!botAI->IsMelee(bot) || botAI->IsTank(bot))
+        return 1.0f;
+
+    Unit* target = AI_VALUE(Unit*, "current target");
+    if (!target || target->GetEntry() != NaxxSpellIds::NpcEmbalmingSlime)
+        return 1.0f;
+
+    if (dynamic_cast<ReachMeleeAction*>(action) || dynamic_cast<CombatFormationMoveAction*>(action))
+        return 0.0f;
+
+    return 1.0f;
+}
+
 //float HeiganDanceMultiplier::GetValue(Action* action)
 //{
 //    Unit* boss = AI_VALUE2(Unit*, "find target", "heigan the unclean");

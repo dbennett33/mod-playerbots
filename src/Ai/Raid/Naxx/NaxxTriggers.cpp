@@ -273,3 +273,22 @@ bool ThaddiusPhaseThaddiusTrigger::IsActive()
 
     return helper.IsPhaseThaddius();
 }
+
+bool EmbalmingSlimeMeleeTrigger::IsActive()
+{
+    if (!botAI->IsMelee(bot) || botAI->IsTank(bot))
+        return false;
+
+    GuidVector const npcs = AI_VALUE(GuidVector, "nearest npcs");
+    for (ObjectGuid const& guid : npcs)
+    {
+        Unit* unit = botAI->GetUnit(guid);
+        if (!unit || !unit->IsAlive() || unit->GetEntry() != NaxxSpellIds::NpcEmbalmingSlime)
+            continue;
+
+        if (bot->GetExactDist2d(unit) < 18.0f)
+            return true;
+    }
+
+    return false;
+}

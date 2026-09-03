@@ -134,6 +134,7 @@ bool PlayerbotAIConfig::Initialize()
     raidRunHealthThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunHealthThreshold", 85);
     raidRunManaThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunManaThreshold", 65);
     raidRunRegenTimeout = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunRegenTimeout", 120);
+    raidRunBossReadyDistance = sConfigMgr->GetOption<float>("AiPlayerbot.RaidRunBossReadyDistance", 40.0f);
     autoSaveMana = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoSaveMana", true);
     saveManaThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.SaveManaThreshold", 60);
     switch (sConfigMgr->GetOption<uint32>("AiPlayerbot.AutoGreaterBlessings", 1))
@@ -241,7 +242,7 @@ bool PlayerbotAIConfig::Initialize()
         attunementQuests);
 
     LoadSet<std::set<uint32>>(
-        sConfigMgr->GetOption<std::string>("AiPlayerbot.UnobtainableItems", "12468,44869,44870,46978"),
+        sConfigMgr->GetOption<std::string>("AiPlayerbot.UnobtainableItems", "12468,44869,44870,46978,49686"),
         unobtainableItems);
 
     botAutologin = sConfigMgr->GetOption<bool>("AiPlayerbot.BotAutologin", false);

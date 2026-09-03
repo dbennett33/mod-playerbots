@@ -185,9 +185,7 @@ bool RaidGroupReadyValue::Calculate()
             anchor = tank;
 
     uint32 const healthThreshold = sPlayerbotAIConfig.raidRunHealthThreshold;
-    uint32 manaThreshold = sPlayerbotAIConfig.raidRunManaThreshold;
-    if (state && state->speedrunMode)
-        manaThreshold = sPlayerbotAIConfig.mediumMana;
+    uint32 const manaThreshold = sPlayerbotAIConfig.raidRunManaThreshold;
 
     Group* group = bot->GetGroup();
     if (!group)

@@ -14,6 +14,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "NaxxRaidRunRoute.h"
+#include "NaxxSpellIds.h"
 #include "NonCombatActions.h"
 #include "ObjectAccessor.h"
 #include "PullStrategy.h"
@@ -22,6 +23,7 @@
 #include "ServerFacade.h"
 #include "WorldPacket.h"
 #include <ctime>
+#include <sstream>
 #include <string>
 
 namespace
@@ -47,14 +49,6 @@ Player* GetLeaderTank(Player* master, RaidRunState const* state)
     return nullptr;
 }
 
-uint32 RegenManaThreshold(RaidRunState const* state)
-{
-    if (state && state->speedrunMode)
-        return sPlayerbotAIConfig.mediumMana;
-
-    return sPlayerbotAIConfig.raidRunManaThreshold;
-}
-
 void UseGameObjectPacket(Player* bot, GameObject* go)
 {
     if (!bot || !go || !bot->GetSession())
@@ -75,8 +69,6 @@ bool RaidRunGoChatAction::Execute(Event event)
     if (!master)
         return false;
 
-    bool speedrun = event.getParam().find("speedrun") != std::string::npos ||
-                    event.GetSource().find("speedrun") != std::string::npos;
     RaidRunWing wing = RAID_RUN_WING_NONE;
     if (event.getParam().find("construct") != std::string::npos)
         wing = RAID_RUN_WING_NAXX_CONSTRUCT;
@@ -85,7 +77,7 @@ bool RaidRunGoChatAction::Execute(Event event)
     if (existing && existing->phase == RAID_RUN_PAUSED)
         message = sRaidRunMgr.ResumeRun(master);
     else
-        message = sRaidRunMgr.StartRun(master, speedrun, wing);
+        message = sRaidRunMgr.StartRun(master, wing);
     botAI->TellMaster(message);
     return true;
 }
@@ -189,7 +181,11 @@ bool RaidRunLeaderAction::PullTarget(Creature* target, Event event)
     if (!botAI->IsTank(bot))
         return false;
 
-    float const engageDistance = sPlayerbotAIConfig.contactDistance > 8.0f ? sPlayerbotAIConfig.contactDistance : 8.0f;
+    // Embalming Slime pulses a poison cloud; do not charge into the pit.
+    float engageDistance = sPlayerbotAIConfig.contactDistance > 8.0f ? sPlayerbotAIConfig.contactDistance : 8.0f;
+    if (target->GetEntry() == NaxxSpellIds::NpcEmbalmingSlime)
+        engageDistance = 18.0f;
+
     if (bot->GetDistance(target) > engageDistance)
         return MoveTo(target);
 
@@ -311,7 +307,30 @@ bool RaidRunLeaderAction::Execute(Event event)
     if (step->bossEntry)
     {
         if (Creature* target = FindPullTarget(*step))
+        {
+            float const readyDist = sPlayerbotAIConfig.raidRunBossReadyDistance;
+            if (readyDist > 0.0f)
+            {
+                uint32 const missing = RaidRunMgr::CountMembersNotReadyForBoss(bot, readyDist);
+                if (missing > 0)
+                {
+                    if (!state->announcedBossWait)
+                    {
+                        std::ostringstream out;
+                        out << "Waiting for " << missing << " raid member";
+                        if (missing != 1)
+                            out << "s";
+                        out << " before pulling " << step->name;
+                        botAI->TellMaster(out.str());
+                        state->announcedBossWait = true;
+                    }
+                    return false;
+                }
+            }
+
+            state->announcedBossWait = false;
             return PullTarget(target, event);
+        }
 
         return false;
     }
@@ -384,7 +403,7 @@ bool RaidRunRegenAction::isUseful()
         return false;
 
     uint32 const healthThreshold = sPlayerbotAIConfig.raidRunHealthThreshold;
-    uint32 const manaThreshold = RegenManaThreshold(state);
+    uint32 const manaThreshold = sPlayerbotAIConfig.raidRunManaThreshold;
 
     if (bot->getStandState() == UNIT_STAND_STATE_SIT)
         return AI_VALUE2(uint8, "mana", "self target") < manaThreshold || bot->GetHealthPct() < healthThreshold;
@@ -397,10 +416,8 @@ bool RaidRunRegenAction::isUseful()
 
 bool RaidRunRegenAction::Execute(Event event)
 {
-    Player* master = GetMaster();
-    RaidRunState const* state = master ? sRaidRunMgr.GetState(master) : nullptr;
     uint32 const healthThreshold = sPlayerbotAIConfig.raidRunHealthThreshold;
-    uint32 const manaThreshold = RegenManaThreshold(state);
+    uint32 const manaThreshold = sPlayerbotAIConfig.raidRunManaThreshold;
 
     if (AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") < manaThreshold)
     {

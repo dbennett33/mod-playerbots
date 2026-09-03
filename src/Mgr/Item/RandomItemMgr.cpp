@@ -1372,6 +1372,11 @@ bool RandomItemMgr::IsInternalItem(ItemTemplate const* proto)
     if (proto->HasFlag(ITEM_FLAG_DEPRECATED))
         return true;
 
+    // FlagsExtra 0x2000 is unused in 3.3.5. Cata-era dumps set it on leftover/unobtainable
+    // templates (PTR stubs, GM test gear, unused named items such as item 49686).
+    if (proto->HasFlag2(ITEM_FLAG2_SHOW_BEFORE_DISCOVERED))
+        return true;
+
     char const* name = proto->Name1.c_str();
     return strstr(name, "NPC ")        ||  // 4859
            strstr(name, "Monster ")    ||  // 574

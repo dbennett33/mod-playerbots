@@ -8,6 +8,7 @@
 #include "Group.h"
 #include "NaxxRaidRunRoute.h"
 #include "ObjectAccessor.h"
+#include "Player.h"
 #include "PlayerbotAI.h"
 #include "PlayerbotMgr.h"
 #include "Playerbots.h"
@@ -121,6 +122,32 @@ void RaidRunMgr::AssignMainTank(Group* group, Player* tank)
     group->SetGroupMemberFlag(tank->GetGUID(), true, MEMBER_FLAG_MAINTANK);
 }
 
+uint32 RaidRunMgr::CountMembersNotReadyForBoss(Player* tank, float range)
+{
+    if (!tank || range <= 0.0f)
+        return 0;
+
+    Group* group = tank->GetGroup();
+    if (!group)
+        return 0;
+
+    uint32 missing = 0;
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (!member || member == tank || !member->IsInWorld())
+            continue;
+
+        if (member->GetMap() != tank->GetMap())
+            continue;
+
+        if (tank->GetExactDist2d(member) > range)
+            ++missing;
+    }
+
+    return missing;
+}
+
 void RaidRunMgr::ApplyRunStrategies(Player* master)
 {
     RaidRunState const* state = GetState(master);
@@ -160,7 +187,7 @@ void RaidRunMgr::RemoveRunStrategies(Player* master)
         });
 }
 
-std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode, RaidRunWing requestedWing)
+std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
 {
     if (!sPlayerbotAIConfig.enableRaidRun)
         return "Raid run is disabled in playerbots.conf";
@@ -189,6 +216,7 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode, RaidRunWing 
             existing->routeStep = NaxxRaidRunRoute::FindFirstIncompleteStep(tank, existing->wing);
             existing->phase = RAID_RUN_RUNNING;
             existing->announcedRegen = false;
+            existing->announcedBossWait = false;
             existing->leaderTankGuid = tank->GetGUID();
             AssignMainTank(master->GetGroup(), tank);
             ApplyRunStrategies(master);
@@ -227,8 +255,8 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode, RaidRunWing 
     state.routeStep = routeStep;
     state.leaderTankGuid = tank->GetGUID();
     state.regenBreakStarted = 0;
-    state.speedrunMode = speedrunMode;
     state.announcedRegen = false;
+    state.announcedBossWait = false;
 
     AssignMainTank(master->GetGroup(), tank);
     ApplyRunStrategies(master);
@@ -236,8 +264,6 @@ std::string RaidRunMgr::StartRun(Player* master, bool speedrunMode, RaidRunWing 
     std::ostringstream out;
     out << "Raid run started — " << NaxxRaidRunRoute::GetWingName(state.wing) << " wing — " << tank->GetName()
         << " is leading";
-    if (speedrunMode)
-        out << " (speedrun mode)";
     return out.str();
 }
 

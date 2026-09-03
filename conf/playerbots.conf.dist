@@ -430,11 +430,19 @@ AiPlayerbot.LowMana = 15
 AiPlayerbot.MediumMana = 40
 AiPlayerbot.HighMana = 65
 
-# Bot-led raid run (Naxx Arachnid wing v1)
+# Bot-led raid run. Whisper: raid go | raid pause | raid stop | raid status
+# Optional: "raid go construct" to start the Construct wing.
 AiPlayerbot.EnableRaidRun = 1
+#
+# Drink/eat until these percents before the next pull. Lower mana (e.g. 40) for faster pulls.
 AiPlayerbot.RaidRunHealthThreshold = 85
 AiPlayerbot.RaidRunManaThreshold = 65
+# Resume anyway after this many seconds of regen (0 = wait forever)
 AiPlayerbot.RaidRunRegenTimeout = 120
+#
+# Boss pulls wait until every group member in the instance is this close to the tank.
+# Naxx rooms lock their doors on pull. 0 = do not wait.
+AiPlayerbot.RaidRunBossReadyDistance = 40
 
 #
 #
@@ -1217,8 +1225,9 @@ AiPlayerbot.RandomGearLoweringChance = 0
 
 # Unobtainable or unusable items (comma-separated list of item IDs)
 # Defaults: Chilton Wand (12468), Frenzyheart Insignia of Fury test/on-use row (44869),
-#           Oracle Talisman of Ablution test/on-use row (44870), Totem of the Earthen Ring (46978)
-AiPlayerbot.UnobtainableItems = 12468,44869,44870,46978
+#           Oracle Talisman of Ablution test/on-use row (44870), Totem of the Earthen Ring (46978),
+#           Maghia's Misguided Quill leftover stub (49686; real trinket is 50357)
+AiPlayerbot.UnobtainableItems = 12468,44869,44870,46978,49686
 
 # Randombots check player's gearscore level and deny the group invitation if it's too low
 # Default: 0 (disabled)

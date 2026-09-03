@@ -19,6 +19,14 @@ public:
     float GetValue(Action* action) override;
 };
 
+class EmbalmingSlimeMultiplier : public Multiplier
+{
+public:
+    EmbalmingSlimeMultiplier(PlayerbotAI* ai) : Multiplier(ai, "embalming slime") {}
+
+    float GetValue(Action* action) override;
+};
+
 //class HeiganDanceMultiplier : public Multiplier
 //{
 //public:

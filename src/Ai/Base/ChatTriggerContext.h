@@ -155,7 +155,6 @@ public:
         creators["wait for attack time"] = &ChatTriggerContext::wait_for_attack_time;
         creators["focus heal"] = &ChatTriggerContext::focus_heal;
         creators["raid go"] = &ChatTriggerContext::raid_go;
-        creators["go speedrun"] = &ChatTriggerContext::go_speedrun;
         creators["raid pause"] = &ChatTriggerContext::raid_pause;
         creators["raid stop"] = &ChatTriggerContext::raid_stop;
         creators["raid status"] = &ChatTriggerContext::raid_status;
@@ -292,7 +291,6 @@ private:
     static Trigger* wait_for_attack_time(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "wait for attack time"); }
     static Trigger* focus_heal(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "focus heal"); }
     static Trigger* raid_go(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid go"); }
-    static Trigger* go_speedrun(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "go speedrun"); }
     static Trigger* raid_pause(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid pause"); }
     static Trigger* raid_stop(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid stop"); }
     static Trigger* raid_status(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "raid status"); }

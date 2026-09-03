@@ -33,8 +33,8 @@ struct RaidRunState
     uint8 routeStep = 0;
     ObjectGuid leaderTankGuid;
     time_t regenBreakStarted = 0;
-    bool speedrunMode = false;
     bool announcedRegen = false;
+    bool announcedBossWait = false;
 };
 
 #endif

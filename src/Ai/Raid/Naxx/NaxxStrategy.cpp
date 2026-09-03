@@ -26,6 +26,10 @@ void RaidNaxxStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         { NextAction("rotate grobbulus", ACTION_RAID + 1) }
     ));
 
+    triggers.push_back(new TriggerNode("embalming slime melee",
+        { NextAction("embalming slime stay clear", ACTION_RAID + 2) }
+    ));
+
     // Heigan the Unclean
     //triggers.push_back(new TriggerNode("heigan melee",
     //    { NextAction("heigan dance melee", ACTION_RAID + 1) }
@@ -153,6 +157,7 @@ void RaidNaxxStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 void RaidNaxxStrategy::InitMultipliers(std::vector<Multiplier*>& multipliers)
 {
     multipliers.push_back(new GrobbulusMultiplier(botAI));
+    multipliers.push_back(new EmbalmingSlimeMultiplier(botAI));
     //multipliers.push_back(new HeiganDanceMultiplier(botAI));
     multipliers.push_back(new NaxxDelayBloodlustMultiplier(botAI));
     multipliers.push_back(new LoathebGenericMultiplier(botAI));
