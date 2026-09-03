@@ -130,7 +130,7 @@ bool PlayerbotAIConfig::Initialize()
     lowMana = sConfigMgr->GetOption<int32>("AiPlayerbot.LowMana", 15);
     mediumMana = sConfigMgr->GetOption<int32>("AiPlayerbot.MediumMana", 40);
     highMana = sConfigMgr->GetOption<int32>("AiPlayerbot.HighMana", 65);
-    enableRaidRun = sConfigMgr->GetOption<bool>("AiPlayerbot.EnableRaidRun", true);
+    enableRaidRun = sConfigMgr->GetOption<bool>("AiPlayerbot.EnableRaidRun", false);
     raidRunHealthThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunHealthThreshold", 85);
     raidRunManaThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunManaThreshold", 65);
     raidRunRegenTimeout = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunRegenTimeout", 120);

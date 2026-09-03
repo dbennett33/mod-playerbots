@@ -62,6 +62,23 @@ The [Playerbots Wiki](https://github.com/mod-playerbots/mod-playerbots/wiki) con
 
 Bots are controlled via chat commands. For larger bot groups, this can be cumbersome. Because of this, community members have developed client AddOns to allow controlling bots through the in-game UI. We recommend you check out their projects listed in the [AddOns and Submodules](https://github.com/mod-playerbots/mod-playerbots/wiki/Playerbot-Addons-and-Sub%E2%80%90Modules) page.
 
+## Raid Run
+
+Bot-led Naxxramas runs: a bot tank walks a recorded route, pulls trash and bosses, and the raid recovers from deaths. The human plays DPS or healer.
+
+Enable in `playerbots.conf` (`AiPlayerbot.EnableRaidRun = 1`; dist default is 0). Whisper any bot in the group:
+
+| Command | Effect |
+|---------|--------|
+| `raid go` | Start (or resume) the suggested wing |
+| `raid go construct` | Start the Construct wing |
+| `raid pause` / `raid stop` / `raid status` | Pause, clear, or print status |
+| `raid record start` / `stop` / `pin <name>` / `boss <entry> <name>` / `clear <radius> <name>` | Walk-and-pin a route (writes a pasteable C++ table) |
+
+Config keys (all `AiPlayerbot.`): `RaidRunHealthThreshold`, `RaidRunManaThreshold`, `RaidRunRegenTimeout`, `RaidRunBossReadyDistance`, `RaidRunWipeMode` (`0` pause+report, `1` revive at wing entrance, `2` ghost run).
+
+In-game control panel: RaidLead addon (3.3.5). Copy `addons/RaidLead` from the private ops repo into `Interface/AddOns`. See that repo's `docs/raid-lead/README.md` for the `[RR]` status format.
+
 ## Contributing
 
 This project is still under development. We encourage anyone to make contributions, anything from pull requests to reporting issues. If you encounter any errors or experience crashes, we encourage you [report them as GitHub issues](https://github.com/mod-playerbots/mod-playerbots/issues/new?template=bug_report.md). Your valuable feedback will help us improve this project collaboratively.

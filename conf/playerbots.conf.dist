@@ -436,9 +436,11 @@ AiPlayerbot.LowMana = 15
 AiPlayerbot.MediumMana = 40
 AiPlayerbot.HighMana = 65
 
-# Bot-led raid run. Whisper: raid go | raid pause | raid stop | raid status
-# Optional: "raid go construct" to start the Construct wing.
-AiPlayerbot.EnableRaidRun = 1
+# Bot-led raid run. Whisper any bot: raid go | raid go construct | raid pause |
+# raid stop | raid status. Recording: raid record start|stop|pin|boss|clear.
+# Default 0 for public forks. Private realms that want the feature set this to 1
+# in the local (non-dist) playerbots.conf.
+AiPlayerbot.EnableRaidRun = 0
 #
 # Drink/eat until these percents before the next pull. Lower mana (e.g. 40) for faster pulls.
 AiPlayerbot.RaidRunHealthThreshold = 85
