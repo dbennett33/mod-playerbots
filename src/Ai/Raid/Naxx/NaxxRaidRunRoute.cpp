@@ -183,51 +183,16 @@ std::vector<RaidRunRouteStep> const& StepsFor(RaidRunWing wing)
     }
 }
 
-RaidRunRouteStep const* NextBossStep(std::vector<RaidRunRouteStep> const& steps, uint8 index)
+bool IsTravelStepArrived(Player* bot, RaidRunRouteStep const& step)
 {
-    for (uint8 i = index + 1; i < steps.size(); ++i)
-    {
-        if (steps[i].bossEntry)
-            return &steps[i];
-    }
-
-    return nullptr;
-}
-
-bool IsTravelStepPassed(Player* bot, std::vector<RaidRunRouteStep> const& steps, uint8 index)
-{
-    if (index >= steps.size())
-        return true;
-
-    RaidRunRouteStep const* step = &steps[index];
-    RaidRunRouteStep const* nextBoss = NextBossStep(steps, index);
-    if (!nextBoss)
+    if (!bot)
         return false;
 
-    if (NaxxRaidRunRoute::IsBossEncounterDone(bot, nextBoss->bossEntry))
-        return true;
-
-    // Trash-clear pins must be walked. "Closer to next boss" would skip packs.
-    if (step->clearRadius > 0.0f)
+    if (std::fabs(bot->GetPositionZ() - step.z) > 5.0f)
         return false;
 
-    // Only later pins before the next boss. Standing in Grobbulus's lab (Z 311) matches that
-    // boss pin in 2D and used to skip the whole Patchwerk-floor path.
-    for (uint8 i = index + 1; i < steps.size(); ++i)
-    {
-        RaidRunRouteStep const& later = steps[i];
-        if (std::fabs(bot->GetPositionZ() - later.z) <= 10.0f &&
-            ServerFacade::instance().IsDistanceLessOrEqualThan(
-                ServerFacade::instance().GetDistance2d(bot, later.x, later.y), later.arriveDistance))
-            return true;
-
-        if (later.bossEntry)
-            break;
-    }
-
-    float const botToBoss = bot->GetExactDist2d(nextBoss->x, nextBoss->y);
-    float const stepToBoss = std::hypot(step->x - nextBoss->x, step->y - nextBoss->y);
-    return botToBoss + step->arriveDistance < stepToBoss;
+    return ServerFacade::instance().IsDistanceLessOrEqualThan(
+        ServerFacade::instance().GetDistance2d(bot, step.x, step.y), step.arriveDistance);
 }
 
 bool IsRouteBossEntry(uint32 entry)
@@ -475,20 +440,9 @@ bool NaxxRaidRunRoute::IsStepComplete(Player* bot, RaidRunWing wing, uint8 index
     }
 
     if (step.clearRadius > 0.0f)
-    {
-        // Pack is dead: leave the pin. Requiring arriveDistance rewinds to the last
-        // pack and loops east-west along Faerlina's south wall.
-        if (IsTravelStepPassed(bot, steps, index))
-            return true;
+        return FindClearableTrash(bot, step) == nullptr && IsTravelStepArrived(bot, step);
 
-        return FindClearableTrash(bot, step) == nullptr;
-    }
-
-    if (ServerFacade::instance().IsDistanceLessOrEqualThan(
-            ServerFacade::instance().GetDistance2d(bot, step.x, step.y), step.arriveDistance))
-        return true;
-
-    return IsTravelStepPassed(bot, steps, index);
+    return IsTravelStepArrived(bot, step);
 }
 
 uint8 NaxxRaidRunRoute::FindFirstIncompleteStep(Player* bot, RaidRunWing wing)
@@ -497,10 +451,21 @@ uint8 NaxxRaidRunRoute::FindFirstIncompleteStep(Player* bot, RaidRunWing wing)
     if (!bot)
         return 0;
 
+    std::vector<RaidRunRouteStep> const& steps = GetSteps(wing);
+    uint8 segmentStart = 0;
     for (uint8 i = 0; i < count; ++i)
     {
-        if (!IsStepComplete(bot, wing, i))
-            return i;
+        RaidRunRouteStep const& step = steps[i];
+        if (step.portalGoEntry)
+            return IsAtNaxxHub(bot) ? count : i;
+
+        if (step.bossEntry)
+        {
+            if (!IsBossEncounterDone(bot, step.bossEntry))
+                return segmentStart;
+
+            segmentStart = static_cast<uint8>(i + 1);
+        }
     }
 
     return count;

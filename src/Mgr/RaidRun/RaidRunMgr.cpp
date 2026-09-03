@@ -720,13 +720,12 @@ void RaidRunMgr::SyncRouteStep(Player* master, Player* bot)
     if (first >= state->routeStep)
         return;
 
-    // Rewind only if an earlier boss (or trash pinned before that boss) is still up.
-    // The Faerlina->Maexxna U-hallway walks away from Maexxna, so Euclidean "passed"
-    // flips travel steps incomplete and would bounce the tank between boss and door.
+    // Rewind only when an earlier boss is still incomplete. Trash/travel Euclidean
+    // "passed" checks used to bounce the tank in the Faerlina U-hallway.
     for (uint8 i = first; i < state->routeStep; ++i)
     {
         RaidRunRouteStep const* step = NaxxRaidRunRoute::GetStep(state->wing, i);
-        if (step && (step->bossEntry || step->clearRadius > 0.0f))
+        if (step && step->bossEntry && !NaxxRaidRunRoute::IsBossEncounterDone(bot, step->bossEntry))
         {
             state->routeStep = first;
             return;
