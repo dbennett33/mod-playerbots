@@ -54,6 +54,8 @@ public:
     void RegisterProvider(uint32 mapId, RaidRunRouteProvider* provider);
     RaidRunRouteProvider* GetProviderForMap(uint32 mapId) const;
     RaidRunRouteProvider* GetProvider(Player const* player) const;
+    void OnMasterLogout(Player* master);
+    void CheckLeader(Player* master);
 
 private:
     RaidRunMgr() = default;

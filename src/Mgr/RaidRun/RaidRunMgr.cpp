@@ -123,6 +123,58 @@ RaidRunRouteProvider* RaidRunMgr::GetProvider(Player const* player) const
     return player ? GetProviderForMap(player->GetMapId()) : nullptr;
 }
 
+void RaidRunMgr::OnMasterLogout(Player* master)
+{
+    if (!master || !GetState(master))
+        return;
+
+    RemoveRunStrategies(master);
+    ClearState(master);
+}
+
+void RaidRunMgr::CheckLeader(Player* master)
+{
+    RaidRunState* state = GetState(master);
+    if (!state || state->phase == RAID_RUN_IDLE || state->phase == RAID_RUN_WING_COMPLETE)
+        return;
+
+    Player* tank = ObjectAccessor::FindPlayer(state->leaderTankGuid);
+    bool const present = tank && tank->IsInWorld() && tank->GetMap() == master->GetMap()
+        && tank->GetGroup() && master->GetGroup() && tank->GetGroup() == master->GetGroup();
+    if (present)
+    {
+        state->leaderMissingSince = 0;
+        return;
+    }
+
+    time_t const now = time(nullptr);
+    if (state->leaderMissingSince == 0)
+    {
+        state->leaderMissingSince = now;
+        return;
+    }
+
+    if (now - state->leaderMissingSince < 30)
+        return;
+
+    Player* next = FindLeaderTank(master);
+    if (next)
+    {
+        state->leaderTankGuid = next->GetGUID();
+        state->leaderMissingSince = 0;
+        AssignMainTank(master->GetGroup(), next);
+        ApplyRunStrategies(master);
+        TellMasterFromRaidBot(master, std::string(next->GetName()) + " is the new lead tank");
+        BroadcastStatus(master);
+        return;
+    }
+
+    state->leaderMissingSince = 0;
+    if (state->phase != RAID_RUN_PAUSED)
+        SetPhase(master, RAID_RUN_PAUSED);
+    TellMasterFromRaidBot(master, "no bot tank remaining — run paused");
+}
+
 Player* RaidRunMgr::FindLeaderTank(Player* master)
 {
     if (!master)
@@ -338,6 +390,28 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
     if (!master->GetGroup())
         return "You must be in a group to start a raid run";
 
+    Group* group = master->GetGroup();
+    for (auto const& pair : _states)
+    {
+        if (pair.first == master->GetGUID())
+            continue;
+
+        RaidRunState const& other = pair.second;
+        if (other.phase == RAID_RUN_IDLE || other.phase == RAID_RUN_WING_COMPLETE)
+            continue;
+
+        Player* otherMaster = ObjectAccessor::FindPlayer(pair.first);
+        if (otherMaster && otherMaster->GetGroup() == group)
+            return "A raid run is already active in this group";
+
+        for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+        {
+            Player* member = ref->GetSource();
+            if (member && member->GetGUID() == other.leaderTankGuid)
+                return "A raid run is already active in this group";
+        }
+    }
+
     RaidRunState* existing = GetState(master);
     if (existing && existing->phase != RAID_RUN_IDLE && existing->phase != RAID_RUN_WING_COMPLETE)
     {
@@ -355,6 +429,7 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
             existing->announcedRegen = false;
             existing->announcedBossWait = false;
             existing->wipeRecovery = false;
+            existing->leaderMissingSince = 0;
             existing->leaderTankGuid = tank->GetGUID();
             AssignMainTank(master->GetGroup(), tank);
             ApplyRunStrategies(master);
@@ -401,6 +476,7 @@ std::string RaidRunMgr::StartRun(Player* master, RaidRunWing requestedWing)
     state.ClearStuckTracking();
     state.lastWipeCheck = 0;
     state.wipeRecovery = false;
+    state.leaderMissingSince = 0;
 
     AssignMainTank(master->GetGroup(), tank);
     ApplyRunStrategies(master);

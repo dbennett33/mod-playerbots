@@ -44,6 +44,7 @@ struct RaidRunState
     uint8 stuckRetries = 0;
     time_t lastWipeCheck = 0;
     bool wipeRecovery = false;
+    time_t leaderMissingSince = 0;
 
     void ClearStuckTracking()
     {

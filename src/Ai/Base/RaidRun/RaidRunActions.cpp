@@ -318,6 +318,7 @@ bool RaidRunLeaderAction::Execute(Event event)
         return false;
 
     sRaidRunMgr.CheckWipe(master);
+    sRaidRunMgr.CheckLeader(master);
     if (state->phase == RAID_RUN_PAUSED)
         return false;
 
@@ -514,6 +515,7 @@ bool RaidRunFollowTankAction::isUseful()
         return false;
 
     sRaidRunMgr.CheckWipe(master);
+    sRaidRunMgr.CheckLeader(master);
 
     RaidRunState const* state = sRaidRunMgr.GetState(master);
     if (!state || state->phase == RAID_RUN_IDLE || state->phase == RAID_RUN_WING_COMPLETE)
@@ -623,6 +625,7 @@ bool RaidRunResurrectAction::isUseful()
         return false;
 
     sRaidRunMgr.CheckWipe(master);
+    sRaidRunMgr.CheckLeader(master);
 
     RaidRunState const* state = sRaidRunMgr.GetState(master);
     if (!state || state->phase != RAID_RUN_RECOVERY || state->wipeRecovery)
