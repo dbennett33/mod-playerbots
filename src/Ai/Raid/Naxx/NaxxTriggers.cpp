@@ -82,25 +82,23 @@ bool GrobbulusCloudTrigger::IsActive()
     return true;
 }
 
-//bool HeiganMeleeTrigger::IsActive()
-//{
-//    Unit* heigan = AI_VALUE2(Unit*, "find target", "heigan the unclean");
-//    if (!heigan)
-//    {
-//        return false;
-//    }
-//    return !botAI->IsRanged(bot);
-//}
-//
-//bool HeiganRangedTrigger::IsActive()
-//{
-//    Unit* heigan = AI_VALUE2(Unit*, "find target", "heigan the unclean");
-//    if (!heigan)
-//    {
-//        return false;
-//    }
-//    return botAI->IsRanged(bot);
-//}
+bool HeiganMeleeTrigger::IsActive()
+{
+    Unit* heigan = AI_VALUE2(Unit*, "find target", "heigan the unclean");
+    if (!heigan || !heigan->IsAlive() || !heigan->IsInCombat())
+        return false;
+
+    return !botAI->IsRanged(bot);
+}
+
+bool HeiganRangedTrigger::IsActive()
+{
+    Unit* heigan = AI_VALUE2(Unit*, "find target", "heigan the unclean");
+    if (!heigan || !heigan->IsAlive() || !heigan->IsInCombat())
+        return false;
+
+    return botAI->IsRanged(bot);
+}
 
 bool RazuviousTankTrigger::IsActive()
 {

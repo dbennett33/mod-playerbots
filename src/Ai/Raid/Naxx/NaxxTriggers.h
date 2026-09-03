@@ -71,19 +71,19 @@ public:
     bool IsActive() override;
 };
 
-//class HeiganMeleeTrigger : public Trigger
-//{
-//public:
-//    HeiganMeleeTrigger(PlayerbotAI* ai) : Trigger(ai, "heigan melee") {}
-//    virtual bool IsActive();
-//};
-//
-//class HeiganRangedTrigger : public Trigger
-//{
-//public:
-//    HeiganRangedTrigger(PlayerbotAI* ai) : Trigger(ai, "heigan ranged") {}
-//    bool IsActive() override;
-//};
+class HeiganMeleeTrigger : public Trigger
+{
+public:
+    HeiganMeleeTrigger(PlayerbotAI* ai) : Trigger(ai, "heigan melee") {}
+    bool IsActive() override;
+};
+
+class HeiganRangedTrigger : public Trigger
+{
+public:
+    HeiganRangedTrigger(PlayerbotAI* ai) : Trigger(ai, "heigan ranged") {}
+    bool IsActive() override;
+};
 
 class RazuviousTankTrigger : public Trigger
 {

@@ -15,6 +15,7 @@ namespace NaxxSpellIds
 {
     // Heigan
     static constexpr uint32 Eruption10 = 29371;
+    static constexpr uint32 PlagueCloud = 29350;
 /*
     SPELL_SPELL_DISRUPTION          = 29310,
     SPELL_DECREPIT_FEVER            = 29998,
