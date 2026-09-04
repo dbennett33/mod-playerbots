@@ -77,29 +77,32 @@ std::vector<RaidRunRouteStep> const arachnidSteps =
     { "Maexxna south ramp", 3224.40f, -3876.80f, 284.60f, 533, 0, 10.0f, 0.0f, 12.0f },
     { "Maexxna south venoms", 3293.30f, -3906.70f, 294.70f, 533, 0, 10.0f, 0.0f, 14.0f },
     { "Maexxna south hall", 3312.30f, -3879.00f, 294.70f, 533, 0, 10.0f, 0.0f, 14.0f },
-    // Pack in front of MAEXXNA_GATE 181209.
+    // Pack in front of MAEXXNA_GATE 181209. Gate GO Z is 310 (lintel) — walk the hall floor.
     { "Maexxna gate", 3401.20f, -3823.30f, 294.70f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Maexxna", 3511.38f, -3921.58f, 299.51f, 533, 15952, 10.0f, 40.0f },
+    // Inside the room on the web (hall-floor Z). Do not waypoint her hanging spawn
+    // (3511,-3921,299.51) — that Z is above a one-sided web and bots fall through.
+    { "Maexxna", 3460.00f, -3875.00f, 294.70f, 533, 15952, 12.0f, 80.0f },
     // GO 181575 casts 28444 to hub 3005.51,-3434.64,304. Do not walk the wing backwards.
     { "Maexxna portal", 3465.16f, -3940.45f, 308.79f, 533, 0, 8.0f, 0.0f, 0.0f, 181575 }
 };
 
-// Construct quarter is north of the hub. Travel pins re-anchored 2026-09-04 to spawn
-// pack centroids / door GOs (same data set as Arachnid). Grobbulus ramp pins are the
-// in-game-GPS'd originals (no spawns live on the ramp) and now appear on the way DOWN
-// too — the old route jumped lab (z311) -> Gluth hall (z294) with no pins, which is a
-// stacked-floor clip hazard. Extra Z pins on the ramp only — the lab stacks over the
-// first rooms and mmap will clip without them.
+// Construct quarter is north of the hub. Approach pins through Patchwerk are in-game
+// .gps dumps along the LEFT WALKWAY (not vat centroids — the slime pit has no mesh
+// and PathGenerator returns NOPATH, after which followers used to spline through the
+// vat walls). After slime SW, stay on the south rim into Patchwerk's room; do not cut
+// east through the vats. Grobbulus ramp pins stay GPS'd (no spawns on the ramp).
 std::vector<RaidRunRouteStep> const constructSteps =
 {
     // Zone-in point (game_tele 5191). Safe wipe-recovery anchor.
     { "Naxx entrance", 3005.68f, -3447.77f, 293.93f, 533, 0, 12.0f, 0.0f },
-    { "Construct entrance", 3046.70f, -3430.00f, 298.20f, 533, 0, 10.0f, 0.0f, 14.0f },
-    { "Construct first", 3087.40f, -3367.60f, 298.40f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Construct second", 3078.30f, -3313.20f, 294.50f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Construct hall", 3106.20f, -3288.50f, 294.30f, 533, 0, 10.0f, 0.0f, 16.0f },
-    // Embalming Slime room (16 spawns) before Patchwerk.
-    { "Construct slime", 3135.90f, -3212.80f, 294.10f, 533, 0, 10.0f, 0.0f, 22.0f },
+    { "Construct entrance", 3045.63f, -3395.20f, 299.39f, 533, 0, 12.0f, 0.0f },
+    { "Construct first", 3088.10f, -3352.53f, 299.39f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Construct second", 3092.59f, -3313.92f, 293.63f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Construct hall", 3127.32f, -3266.78f, 294.17f, 533, 0, 10.0f, 0.0f, 20.0f },
+    // West/south rim of the slime vats. clearRadius reaches the slimes; pin is on-mesh.
+    { "Construct slime", 3111.25f, -3236.74f, 294.06f, 533, 0, 10.0f, 0.0f, 22.0f },
+    // South rim into the boss room. 3220,-3224 is GPS; do not jump from slime to his spawn.
+    { "Patchwerk room", 3220.00f, -3224.00f, 294.06f, 533, 0, 10.0f, 0.0f, 28.0f },
     { "Patchwerk", 3256.36f, -3230.33f, 294.06f, 533, 16028, 12.0f, 45.0f, 45.0f },
     // GO 181123 (Patchwerk gate).
     { "Patchwerk gate", 3318.00f, -3254.30f, 293.30f, 533, 0, 12.0f, 0.0f },

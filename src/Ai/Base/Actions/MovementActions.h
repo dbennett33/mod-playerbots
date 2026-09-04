@@ -53,6 +53,9 @@ protected:
     bool IsDuplicateMove(float x, float y, float z);
     bool IsWaitingForLastMove(MovementPriority priority);
     bool ShouldKeepCurrentMove(float x, float y, float z, MovementPriority priority);
+    // Raid-run movement: walk a PathGenerator result via MoveSplinePath. Never falls back to a
+    // straight spline through geometry (MovePoint does). Returns false on NOPATH / wrong floor.
+    bool MoveAlongNavmesh(float x, float y, float z);
     bool IsMovingAllowed();
     bool Flee(Unit* target);
     void ClearIdleState();

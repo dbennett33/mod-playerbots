@@ -14,13 +14,10 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "Group.h"
-#include "LastMovementValue.h"
 #include "Log.h"
-#include "MotionMaster.h"
 #include "NaxxSpellIds.h"
 #include "NonCombatActions.h"
 #include "ObjectAccessor.h"
-#include "PathGenerator.h"
 #include "PullStrategy.h"
 #include "RaidRunMgr.h"
 #include "RaidRunRecorder.h"
@@ -242,15 +239,18 @@ bool RaidRunLeaderAction::PullTarget(Creature* target, Event event)
         return false;
 
     // Embalming Slime pulses a poison cloud; do not charge into the pit.
+    // Maexxna hangs at Z ~299 over a one-sided web; charging her spawn drops bots through the floor.
     float engageDistance = sPlayerbotAIConfig.contactDistance > 8.0f ? sPlayerbotAIConfig.contactDistance : 8.0f;
     if (target->GetEntry() == NaxxSpellIds::NpcEmbalmingSlime)
         engageDistance = 18.0f;
+    else if (target->GetEntry() == NaxxSpellIds::NpcMaexxna)
+        engageDistance = 40.0f;
 
     if (bot->GetDistance(target) > engageDistance)
     {
-        // Keep the target's Z. MoveTo(WorldObject) remaps height and can snap onto Grobbulus.
-        return MoveTo(target->GetMapId(), target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(),
-            false, false, false, true);
+        if (!MoveAlongNavmesh(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ()))
+            return MoveAlongNavmesh(target->GetPositionX(), target->GetPositionY(), bot->GetPositionZ());
+        return true;
     }
 
     PullStrategy* strategy = PullStrategy::Get(botAI);
@@ -300,47 +300,9 @@ bool RaidRunLeaderAction::ReportNoPath(RaidRunRouteStep const& step)
 
 bool RaidRunLeaderAction::MoveToStepStrict(RaidRunRouteStep const& step)
 {
-    PathGenerator gen(bot);
-    gen.CalculatePath(step.x, step.y, step.z, false);
-    if (gen.GetPathType() & PATHFIND_NOPATH)
+    if (!MoveAlongNavmesh(step.x, step.y, step.z))
         return ReportNoPath(step);
 
-    if (std::fabs(gen.GetActualEndPosition().z - step.z) > 8.0f)
-        return ReportNoPath(step);
-
-    // Walk the exact path we just validated. MoveTo() -> MovePoint() recomputes its own
-    // path and silently falls back to a straight spline through geometry whenever that
-    // recomputation fails or is trivial (<= 2 points) — the "leader merges through the
-    // wall" class of bugs. MoveSplinePath() follows the given points with no fallback.
-    Movement::PointsArray points = gen.GetPath();
-    if (points.size() < 2)
-        return MoveTo(step.mapId, step.x, step.y, step.z, false, false, false, true);
-
-    if (ShouldKeepCurrentMove(step.x, step.y, step.z, MovementPriority::MOVEMENT_NORMAL))
-        return true;
-
-    UpdateMovementState();
-    if (!IsMovingAllowed())
-        return false;
-
-    MotionMaster* mm = bot->GetMotionMaster();
-    if (!mm)
-        return false;
-
-    if (bot->IsSitState())
-        bot->SetStandState(UNIT_STAND_STATE_STAND);
-
-    float length = 0.0f;
-    for (size_t i = 1; i < points.size(); ++i)
-        length += (points[i] - points[i - 1]).length();
-
-    mm->Clear();
-    mm->MoveSplinePath(&points);
-
-    float const delay = std::min(1000.0f * MoveDelay(length),
-        static_cast<float>(sPlayerbotAIConfig.maxWaitForMove));
-    AI_VALUE(LastMovement&, "last movement")
-        .Set(step.mapId, step.x, step.y, step.z, bot->GetOrientation(), delay, MovementPriority::MOVEMENT_NORMAL);
     return true;
 }
 
@@ -599,8 +561,11 @@ bool RaidRunFollowTankAction::Execute(Event /*event*/)
     float const angle = GetFollowAngle();
     float const destX = tank->GetPositionX() + cos(angle) * maxDistance;
     float const destY = tank->GetPositionY() + sin(angle) * maxDistance;
-    // Follow() uses 2D mmap and will walk the Grobbulus navmesh above the Construct halls.
-    return MoveTo(tank->GetMapId(), destX, destY, tank->GetPositionZ(), false, false, false, true);
+    // Offset can land off the Maexxna web / slime walkway. Never MovePoint-fallback through void.
+    if (MoveAlongNavmesh(destX, destY, tank->GetPositionZ()))
+        return true;
+
+    return MoveAlongNavmesh(tank->GetPositionX(), tank->GetPositionY(), tank->GetPositionZ());
 }
 
 bool RaidRunRegenAction::isUseful()
