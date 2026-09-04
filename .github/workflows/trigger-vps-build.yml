@@ -1,0 +1,58 @@
+name: trigger-vps-build
+
+# Re-run AzerothCore VPS build when the module changes (paired AC branch + module ref).
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Map module branch to AzerothCore branch
+        id: map
+        run: |
+          case "${GITHUB_REF#refs/heads/}" in
+            master)
+              echo "acore_branch=Playerbot" >> "$GITHUB_OUTPUT"
+              ;;
+            dev)
+              echo "acore_branch=dev" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported branch" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Resolve AzerothCore repository
+        id: acore
+        run: |
+          repo="${{ vars.ACORE_REPO }}"
+          if [[ -z "$repo" ]]; then
+            repo="${GITHUB_REPOSITORY_OWNER}/azerothcore-wotlk"
+          fi
+          echo "repository=${repo}" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger AzerothCore vps-build
+        env:
+          GH_TOKEN: ${{ secrets.ACORE_WORKFLOW_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "ACORE_WORKFLOW_PAT secret is not set." >&2
+            echo "Create a PAT with workflow scope on your AzerothCore fork," >&2
+            echo "then add it as Actions secret ACORE_WORKFLOW_PAT." >&2
+            exit 1
+          fi
+          gh workflow run vps-build.yml \
+            --repo "${{ steps.acore.outputs.repository }}" \
+            --ref "${{ steps.map.outputs.acore_branch }}"
+          echo "Triggered vps-build on AzerothCore branch ${{ steps.map.outputs.acore_branch }}"

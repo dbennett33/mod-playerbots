@@ -13,9 +13,15 @@
 #include "ObjectGuid.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
+#include "RaidRunMgr.h"
 #include "ServerFacade.h"
 
 // ReleaseSpiritAction implementation
+bool ReleaseSpiritAction::isUseful()
+{
+    return !RaidRunMgr::ShouldSuppressSpiritRelease(bot);
+}
+
 bool ReleaseSpiritAction::Execute(Event event)
 {
     if (bot->IsAlive())
@@ -103,6 +109,9 @@ bool AutoReleaseSpiritAction::Execute(Event /*event*/)
 
 bool AutoReleaseSpiritAction::isUseful()
 {
+    if (RaidRunMgr::ShouldSuppressSpiritRelease(bot))
+        return false;
+
     if (!bot->isDead() || bot->InArena())
         return false;
 

@@ -8,6 +8,7 @@
 #define PLAYERBOTS_NAXXBOSSHELPER_H
 
 #include "AiObject.h"
+#include "Creature.h"
 #include "EventMap.h"
 #include "Log.h"
 #include "NamedObjectContext.h"
@@ -339,6 +340,119 @@ private:
 
     Unit* _unit = nullptr;
     uint32 _combat_start_ms = 0;
+};
+
+// Mirrors boss_heigan.cpp: slow eruptions at 15s then every 10s; fast (platform) at 7s then every 4s.
+// Safe section starts at 3 and ping-pongs 3→2→1→0→1→2→3. Do not watch spell 29371 — Heigan never
+// casts it; instance GOs do. Fast phase is REACT_PASSIVE and/or Plague Cloud (29350).
+class HeiganBossHelper : public AiObject
+{
+public:
+    static constexpr float PlatformX = 2794.26f;
+    static constexpr float PlatformY = -3706.67f;
+    static constexpr float PlatformZ = 276.54f;
+    static constexpr float FloorZ = 274.38f;
+    // Indexed by AC GetEruptionSection 0..3 (verified against instance_naxxramas.cpp slopes).
+    static constexpr float SafeX[4] = {2755.99f, 2762.30f, 2775.49f, 2794.88f};
+    static constexpr float SafeY[4] = {-3703.96f, -3684.59f, -3674.43f, -3668.12f};
+
+    HeiganBossHelper(PlayerbotAI* botAI) : AiObject(botAI) {}
+
+    bool UpdateBossAI()
+    {
+        if (_unit && (!_unit->IsInWorld() || !_unit->IsAlive() || !_unit->IsInCombat()))
+            Reset();
+
+        if (!_unit)
+        {
+            _unit = AI_VALUE2(Unit*, "find target", "heigan the unclean");
+            if (!_unit || !_unit->IsAlive() || !_unit->IsInCombat())
+                return false;
+        }
+
+        bool const fast = DetectFastDance();
+        uint32 const now = getMSTime();
+        if (!_phaseStartMs)
+        {
+            _wasFast = fast;
+            _phaseStartMs = (fast && NaxxSpellIds::HasAnyAura(_unit, {NaxxSpellIds::PlagueCloud}) && now > 1000)
+                ? now - 1000
+                : now;
+        }
+        else if (fast != _wasFast)
+        {
+            _wasFast = fast;
+            if (fast && NaxxSpellIds::HasAnyAura(_unit, {NaxxSpellIds::PlagueCloud}) && now > 1000)
+                _phaseStartMs = now - 1000;
+            else
+                _phaseStartMs = now;
+        }
+
+        return true;
+    }
+
+    bool IsFastDance() const { return _wasFast; }
+
+    uint8 CurrentSafeSection() const
+    {
+        if (!_phaseStartMs)
+            return 3;
+
+        uint32 const firstDelay = _wasFast ? 7000 : 15000;
+        uint32 const interval = _wasFast ? 4000 : 10000;
+        uint32 const elapsed = getMSTimeDiff(_phaseStartMs, getMSTime());
+        uint32 eruptions = 0;
+        if (elapsed >= firstDelay)
+            eruptions = 1 + (elapsed - firstDelay) / interval;
+
+        uint8 section = 3;
+        bool moveRight = true;
+        for (uint32 i = 0; i < eruptions; ++i)
+        {
+            if (section == 3)
+                moveRight = false;
+            else if (section == 0)
+                moveRight = true;
+
+            if (moveRight)
+                ++section;
+            else
+                --section;
+        }
+        return section;
+    }
+
+    void GetSafePosition(float& x, float& y, float& z) const
+    {
+        uint8 const section = CurrentSafeSection();
+        x = SafeX[section];
+        y = SafeY[section];
+        z = FloorZ;
+    }
+
+private:
+    bool DetectFastDance() const
+    {
+        if (!_unit)
+            return false;
+
+        if (NaxxSpellIds::HasAnyAura(_unit, {NaxxSpellIds::PlagueCloud}))
+            return true;
+
+        Creature const* creature = _unit->ToCreature();
+        return creature && creature->GetReactState() == REACT_PASSIVE;
+    }
+
+    void Reset()
+    {
+        _unit = nullptr;
+        _phaseStartMs = 0;
+        _wasFast = false;
+    }
+
+    Unit* _unit = nullptr;
+    uint32 _phaseStartMs = 0;
+    bool _wasFast = false;
 };
 
 class LoathebBossHelper : public AiObject

@@ -15,6 +15,7 @@ namespace NaxxSpellIds
 {
     // Heigan
     static constexpr uint32 Eruption10 = 29371;
+    static constexpr uint32 PlagueCloud = 29350;
 /*
     SPELL_SPELL_DISRUPTION          = 29310,
     SPELL_DECREPIT_FEVER            = 29998,
@@ -98,6 +99,15 @@ namespace NaxxSpellIds
     SPELL_INFECTED_WOUND                = 29306,
     SPELL_CHOW_SEARCHER                 = 28404
 */
+    // Construct trash — Embalming Slime poison cloud; melee stays on the rim.
+    static constexpr uint32 NpcEmbalmingSlime = 16024;
+
+    // Maexxna
+    static constexpr uint32 NpcWebWrap = 16486;
+    static constexpr uint32 WebWrapStun = 28622;
+    static constexpr uint32 WebWrapSummon = 28627;
+    static constexpr uint32 WebWrapPacify = 28618;
+
     // Anub'Rekhan
     static constexpr uint32 LocustSwarm10 = 28785;
     static constexpr uint32 LocustSwarm10Alt = 28786;

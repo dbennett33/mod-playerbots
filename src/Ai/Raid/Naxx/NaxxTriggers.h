@@ -64,19 +64,26 @@ private:
     static constexpr uint32 CloudRotationDelayMs = 15000;
 };
 
-//class HeiganMeleeTrigger : public Trigger
-//{
-//public:
-//    HeiganMeleeTrigger(PlayerbotAI* ai) : Trigger(ai, "heigan melee") {}
-//    virtual bool IsActive();
-//};
-//
-//class HeiganRangedTrigger : public Trigger
-//{
-//public:
-//    HeiganRangedTrigger(PlayerbotAI* ai) : Trigger(ai, "heigan ranged") {}
-//    bool IsActive() override;
-//};
+class EmbalmingSlimeMeleeTrigger : public Trigger
+{
+public:
+    EmbalmingSlimeMeleeTrigger(PlayerbotAI* ai) : Trigger(ai, "embalming slime melee") {}
+    bool IsActive() override;
+};
+
+class HeiganMeleeTrigger : public Trigger
+{
+public:
+    HeiganMeleeTrigger(PlayerbotAI* ai) : Trigger(ai, "heigan melee") {}
+    bool IsActive() override;
+};
+
+class HeiganRangedTrigger : public Trigger
+{
+public:
+    HeiganRangedTrigger(PlayerbotAI* ai) : Trigger(ai, "heigan ranged") {}
+    bool IsActive() override;
+};
 
 class RazuviousTankTrigger : public Trigger
 {
@@ -126,6 +133,13 @@ class MaexxnaTrigger : public Trigger
 {
 public:
     MaexxnaTrigger(PlayerbotAI* ai) : Trigger(ai, "maexxna") {}
+    bool IsActive() override;
+};
+
+class MaexxnaWebWrapTrigger : public Trigger
+{
+public:
+    MaexxnaWebWrapTrigger(PlayerbotAI* ai) : Trigger(ai, "maexxna web wrap") {}
     bool IsActive() override;
 };
 

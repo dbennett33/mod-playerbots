@@ -19,14 +19,23 @@ public:
     float GetValue(Action* action) override;
 };
 
-//class HeiganDanceMultiplier : public Multiplier
-//{
-//public:
-//    HeiganDanceMultiplier(PlayerbotAI* ai) : Multiplier(ai, "helgan dance") {}
-//
-//public:
-//    float GetValue(Action* action) override;
-//};
+class EmbalmingSlimeMultiplier : public Multiplier
+{
+public:
+    EmbalmingSlimeMultiplier(PlayerbotAI* ai) : Multiplier(ai, "embalming slime") {}
+
+    float GetValue(Action* action) override;
+};
+
+class HeiganDanceMultiplier : public Multiplier
+{
+public:
+    HeiganDanceMultiplier(PlayerbotAI* ai) : Multiplier(ai, "heigan dance"), helper(ai) {}
+    float GetValue(Action* action) override;
+
+private:
+    HeiganBossHelper helper;
+};
 
 class LoathebGenericMultiplier : public Multiplier
 {
@@ -86,6 +95,26 @@ public:
     AnubrekhanGenericMultiplier(PlayerbotAI* ai) : Multiplier(ai, "anubrekhan generic") {}
 
 public:
+    float GetValue(Action* action) override;
+};
+
+class MaexxnaGenericMultiplier : public Multiplier
+{
+public:
+    MaexxnaGenericMultiplier(PlayerbotAI* ai) : Multiplier(ai, "maexxna generic") {}
+
+    float GetValue(Action* action) override;
+
+private:
+    uint32 lastWrapCheckMs = 0;
+    bool cachedHasWrap = false;
+};
+
+class NaxxDelayBloodlustMultiplier : public Multiplier
+{
+public:
+    NaxxDelayBloodlustMultiplier(PlayerbotAI* ai) : Multiplier(ai, "naxx delay bloodlust") {}
+
     float GetValue(Action* action) override;
 };
 

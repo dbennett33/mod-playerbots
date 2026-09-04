@@ -1934,14 +1934,20 @@ bool PlayerbotFactory::CanEquipWeapon(ItemTemplate const* proto)
 
 bool PlayerbotFactory::CanEquipItem(ItemTemplate const* proto)
 {
+    if (!proto)
+        return false;
+
+    if (proto->Class == ITEM_CLASS_CONTAINER)
+        return true;
+
     if (proto->Duration != 0)
         return false;
 
     if (proto->Bonding == BIND_QUEST_ITEM /*|| proto->Bonding == BIND_WHEN_USE*/)
         return false;
 
-    if (proto->Class == ITEM_CLASS_CONTAINER)
-        return true;
+    if (!RandomItemMgr::IsValidItem(proto))
+        return false;
 
     uint32 requiredLevel = proto->RequiredLevel;
     // disable since bad performance
@@ -2353,9 +2359,14 @@ void PlayerbotFactory::InitEquipment(bool incremental, bool second_chance)
 
         if (incremental && oldItem)
         {
-            float old_score = calculator.CalculateItem(oldItem->GetEntry(), oldItem->GetItemRandomPropertyId(), slot);
-            if (bestScoreForSlot < 1.2f * old_score)
-                continue;
+            ItemTemplate const* oldProto = oldItem->GetTemplate();
+            // Replace leftover/unobtainable stubs even if they currently score as BiS.
+            if (oldProto && RandomItemMgr::IsValidItem(oldProto))
+            {
+                float old_score = calculator.CalculateItem(oldItem->GetEntry(), oldItem->GetItemRandomPropertyId(), slot);
+                if (bestScoreForSlot < 1.2f * old_score)
+                    continue;
+            }
         }
         if (oldItem)
         {

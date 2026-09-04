@@ -115,6 +115,12 @@ public:
         targetPosRecalcDistance, farDistance, healDistance, aggroDistance;
     uint32 criticalHealth, lowHealth, mediumHealth, almostFullHealth;
     uint32 lowMana, mediumMana, highMana;
+    bool enableRaidRun;
+    uint32 raidRunHealthThreshold;
+    uint32 raidRunManaThreshold;
+    uint32 raidRunRegenTimeout;
+    float raidRunBossReadyDistance;
+    uint32 raidRunWipeMode;
     bool autoSaveMana;
     uint32 saveManaThreshold;
     AutoPartyBuffMode autoGreaterBlessings;
@@ -371,6 +377,7 @@ public:
     uint32 botActiveAloneSmartScaleWhenMaxLevel;
 
     bool freeMethodLoot;
+    bool lootCorpses;
     int32 lootNeedRollLevel;
     bool lootGreedRollLevel;
     bool lootRollRecipe;

@@ -12,6 +12,7 @@
 #include "GenericActions.h"
 #include "MovementActions.h"
 #include "NaxxBossHelper.h"
+#include "NaxxSpellIds.h"
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
 
@@ -62,56 +63,38 @@ private:
     float distance;
 };
 
-//class HeiganDanceAction : public MovementAction
-//{
-//public:
-//    HeiganDanceAction(PlayerbotAI* ai) : MovementAction(ai, "heigan dance")
-//    {
-//        this->last_eruption_ms = 0;
-//        this->platform_phase = false;
-//        ResetSafe();
-//        waypoints.push_back(std::make_pair(2794.88f, -3668.12f));
-//        waypoints.push_back(std::make_pair(2775.49f, -3674.43f));
-//        waypoints.push_back(std::make_pair(2762.30f, -3684.59f));
-//        waypoints.push_back(std::make_pair(2755.99f, -3703.96f));
-//        platform = std::make_pair(2794.26f, -3706.67f);
-//    }
-//
-//protected:
-//    bool CalculateSafe();
-//    void ResetSafe()
-//    {
-//        curr_safe = 0;
-//        curr_dir = 1;
-//    }
-//    void NextSafe()
-//    {
-//        curr_safe += curr_dir;
-//        if (curr_safe == 3 || curr_safe == 0)
-//        {
-//            curr_dir = -curr_dir;
-//        }
-//    }
-//    uint32 last_eruption_ms;
-//    bool platform_phase;
-//    uint32 curr_safe, curr_dir;
-//    std::vector<std::pair<float, float>> waypoints;
-//    std::pair<float, float> platform;
-//};
-//
-//class HeiganDanceMeleeAction : public HeiganDanceAction
-//{
-//public:
-//    HeiganDanceMeleeAction(PlayerbotAI* ai) : HeiganDanceAction(ai) {}
-//    virtual bool Execute(Event event);
-//};
-//
-//class HeiganDanceRangedAction : public HeiganDanceAction
-//{
-//public:
-//    HeiganDanceRangedAction(PlayerbotAI* ai) : HeiganDanceAction(ai) {}
-//    virtual bool Execute(Event event);
-//};
+class EmbalmingSlimeStayClearAction : public MoveAwayFromCreatureAction
+{
+public:
+    EmbalmingSlimeStayClearAction(PlayerbotAI* ai)
+        : MoveAwayFromCreatureAction(ai, "embalming slime stay clear", NaxxSpellIds::NpcEmbalmingSlime, 18.0f)
+    {
+    }
+};
+
+class HeiganDanceAction : public MovementAction
+{
+public:
+    HeiganDanceAction(PlayerbotAI* ai, std::string const& name) : MovementAction(ai, name), helper(ai) {}
+
+protected:
+    bool Prepare();
+    HeiganBossHelper helper;
+};
+
+class HeiganDanceMeleeAction : public HeiganDanceAction
+{
+public:
+    HeiganDanceMeleeAction(PlayerbotAI* ai) : HeiganDanceAction(ai, "heigan dance melee") {}
+    bool Execute(Event event) override;
+};
+
+class HeiganDanceRangedAction : public HeiganDanceAction
+{
+public:
+    HeiganDanceRangedAction(PlayerbotAI* ai) : HeiganDanceAction(ai, "heigan dance ranged") {}
+    bool Execute(Event event) override;
+};
 
 class ThaddiusAttackNearestPetAction : public AttackAction
 {
@@ -262,6 +245,17 @@ public:
     AnubrekhanChooseTargetAction(PlayerbotAI* ai) : AttackAction(ai, "anub'rekhan choose target") {}
     bool Execute(Event event) override;
 };
+
+class MaexxnaChooseTargetAction : public AttackAction
+{
+public:
+    MaexxnaChooseTargetAction(PlayerbotAI* ai) : AttackAction(ai, "maexxna choose target") {}
+    bool Execute(Event event) override;
+    bool isUseful() override;
+};
+
+bool HasMaexxnaWebWrap(Player* bot);
+Unit* PickMaexxnaWebWrap(PlayerbotAI* botAI, Player* bot);
 
 class AnubrekhanPositionAction : public RotateAroundTheCenterPointAction
 {

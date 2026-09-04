@@ -24,6 +24,7 @@
 #include "ScriptedCreature.h"
 #include "ShamanActions.h"
 #include "Spell.h"
+#include "Timer.h"
 #include "UseMeetingStoneAction.h"
 #include "WarriorActions.h"
 
@@ -42,68 +43,57 @@ float GrobbulusMultiplier::GetValue(Action* action)
     return 1.0f;
 }
 
-//float HeiganDanceMultiplier::GetValue(Action* action)
-//{
-//    Unit* boss = AI_VALUE2(Unit*, "find target", "heigan the unclean");
-//    if (!boss)
-//    {
-//        return 1.0f;
-//    }
-//    bool platform_phase = boss->IsWithinDist2d(2794.26f, -3706.67f, 10.0f);
-//    bool eruption_casting = false;
-//    if (boss->HasUnitState(UNIT_STATE_CASTING))
-//    {
-//        Spell* spell = boss->GetCurrentSpell(CURRENT_GENERIC_SPELL);
-//        if (!spell)
-//        {
-//            spell = boss->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
-//        }
-//        if (spell)
-//        {
-//            SpellInfo const* info = spell->GetSpellInfo();
-//            bool isEruption = NaxxSpellIds::MatchesAnySpellId(info, {NaxxSpellIds::Eruption10});
-//            if (!isEruption && info && info->SpellName[LOCALE_enUS])
-//            {
-//                // Fallback to name for custom spell data.
-//                isEruption = botAI->EqualLowercaseName(info->SpellName[LOCALE_enUS], "eruption");
-//            }
-//            if (isEruption)
-//            {
-//                eruption_casting = true;
-//            }
-//        }
-//    }
-//    if (dynamic_cast<CombatFormationMoveAction*>(action) ||
-//        dynamic_cast<CastDisengageAction*>(action) ||
-//        dynamic_cast<CastBlinkBackAction*>(action) )
-//    {
-//        return 0.0f;
-//    }
-//    if (!platform_phase && !eruption_casting)
-//    {
-//        return 1.0f;
-//    }
-//    if (dynamic_cast<HeiganDanceAction*>(action) || dynamic_cast<CurePartyMemberAction*>(action))
-//    {
-//        return 1.0f;
-//    }
-//    if (dynamic_cast<CastSpellAction*>(action) && !dynamic_cast<CastMeleeSpellAction*>(action))
-//    {
-//        CastSpellAction* spellAction = dynamic_cast<CastSpellAction*>(action);
-//        uint32 spellId = AI_VALUE2(uint32, "spell id", spellAction->getSpell());
-//        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-//        if (!spellInfo)
-//        {
-//            return 0.0f;
-//        }
-//        uint32 castTime = spellInfo->CalcCastTime();
-//        if (castTime == 0 && !spellInfo->IsChanneled())
-//        {
-//            return 1.0f;
-//        }
-//    }
-//    return 0.0f;
-//}
+float EmbalmingSlimeMultiplier::GetValue(Action* action)
+{
+    if (!botAI->IsMelee(bot) || botAI->IsTank(bot))
+        return 1.0f;
+
+    Unit* target = AI_VALUE(Unit*, "current target");
+    if (!target || target->GetEntry() != NaxxSpellIds::NpcEmbalmingSlime)
+        return 1.0f;
+
+    if (dynamic_cast<ReachMeleeAction*>(action) || dynamic_cast<CombatFormationMoveAction*>(action))
+        return 0.0f;
+
+    return 1.0f;
+}
+
+float HeiganDanceMultiplier::GetValue(Action* action)
+{
+    if (!helper.UpdateBossAI())
+        return 1.0f;
+
+    if (dynamic_cast<CombatFormationMoveAction*>(action) ||
+        dynamic_cast<CastDisengageAction*>(action) ||
+        dynamic_cast<CastBlinkBackAction*>(action))
+        return 0.0f;
+
+    if (dynamic_cast<HeiganDanceAction*>(action) || dynamic_cast<CurePartyMemberAction*>(action))
+        return 1.0f;
+
+    if (!helper.IsFastDance())
+        return 1.0f;
+
+    if (dynamic_cast<CastSpellAction*>(action) && !dynamic_cast<CastMeleeSpellAction*>(action))
+    {
+        CastSpellAction* spellAction = dynamic_cast<CastSpellAction*>(action);
+        uint32 const spellId = AI_VALUE2(uint32, "spell id", spellAction->getSpell());
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+        if (!spellInfo)
+            return 0.0f;
+
+        uint32 const castTime = spellInfo->CalcCastTime();
+        if (castTime == 0 && !spellInfo->IsChanneled())
+            return 1.0f;
+
+        return 0.0f;
+    }
+
+    if (dynamic_cast<CastMeleeSpellAction*>(action))
+        return 1.0f;
+
+    return 0.0f;
+}
 
 float LoathebGenericMultiplier::GetValue(Action* action)
 {
@@ -240,14 +230,73 @@ float AnubrekhanGenericMultiplier::GetValue(Action* action)
     if (!boss)
         return 1.0f;
 
+    // Follow / formation collapse the raid onto the tank, which wipes to Impale.
+    if (boss->IsInCombat() &&
+        (dynamic_cast<FollowAction*>(action) || dynamic_cast<CombatFormationMoveAction*>(action)))
+        return 0.0f;
+
     if (NaxxSpellIds::HasAnyAura(
             boss, {NaxxSpellIds::LocustSwarm10, NaxxSpellIds::LocustSwarm10Alt, NaxxSpellIds::LocustSwarm25}) ||
         botAI->HasAura("locust swarm", boss))
     {
-        if (dynamic_cast<FleeAction*>(action))
+        // Chase/flee walk back into the cloud. Tank kites via anub'rekhan position.
+        if (dynamic_cast<FleeAction*>(action) || dynamic_cast<ReachMeleeAction*>(action) ||
+            dynamic_cast<ReachSpellAction*>(action))
             return 0.0f;
     }
     return 1.0f;
+}
+
+float MaexxnaGenericMultiplier::GetValue(Action* action)
+{
+    // Melee stay on Maexxna. Only ranged swap to cocoons.
+    if (botAI->IsMainTank(bot) || !botAI->IsRanged(bot))
+        return 1.0f;
+
+    uint32 const now = getMSTime();
+    if (!lastWrapCheckMs || getMSTimeDiff(lastWrapCheckMs, now) > 400)
+    {
+        lastWrapCheckMs = now;
+        cachedHasWrap = HasMaexxnaWebWrap(bot);
+    }
+
+    if (!cachedHasWrap)
+        return 1.0f;
+
+    Unit* boss = AI_VALUE2(Unit*, "find target", "maexxna");
+    if (!boss)
+        return 1.0f;
+
+    // Wraps are ~29yd up the wall. Chase/formation/rear-flank pull bots off the cocoons
+    // or try to mmap-path to Z=320.
+    if (dynamic_cast<FollowAction*>(action) || dynamic_cast<CombatFormationMoveAction*>(action) ||
+        dynamic_cast<RearFlankAction*>(action) || dynamic_cast<DpsAssistAction*>(action) ||
+        dynamic_cast<TankAssistAction*>(action) || dynamic_cast<ReachMeleeAction*>(action) ||
+        dynamic_cast<ReachSpellAction*>(action) || dynamic_cast<PetAttackAction*>(action))
+        return 0.0f;
+
+    return 1.0f;
+}
+
+float NaxxDelayBloodlustMultiplier::GetValue(Action* action)
+{
+    if (bot->getClass() != CLASS_SHAMAN)
+        return 1.0f;
+
+    if (!dynamic_cast<CastBloodlustAction*>(action) && !dynamic_cast<CastHeroismAction*>(action))
+        return 1.0f;
+
+    Unit* boss = AI_VALUE(Unit*, "boss target");
+    if (boss && boss->IsAlive() && boss->IsInCombat())
+        return 1.0f;
+
+    Unit* current = AI_VALUE(Unit*, "current target");
+    Creature* creature = current ? current->ToCreature() : nullptr;
+    if (creature && creature->IsAlive() && creature->IsInCombat() &&
+        (creature->IsDungeonBoss() || creature->isWorldBoss()))
+        return 1.0f;
+
+    return 0.0f;
 }
 
 float FourHorsemenGenericMultiplier::GetValue(Action* action)

@@ -19,6 +19,7 @@ public:
         : Action(botAI, name) {}
 
     bool Execute(Event event) override;
+    bool isUseful() override;
     void LogRelease(const std::string& releaseType) const;
 
 protected:

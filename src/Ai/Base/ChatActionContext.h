@@ -57,6 +57,7 @@
 #include "RewardAction.h"
 #include "RtiAction.h"
 #include "RtscAction.h"
+#include "RaidRunActions.h"
 #include "SaveManaAction.h"
 #include "SellAction.h"
 #include "SendMailAction.h"
@@ -210,6 +211,11 @@ public:
         creators["roll"] = &ChatActionContext::roll_action;
         creators["wait for attack time"] = &ChatActionContext::wait_for_attack_time;
         creators["focus heal targets"] = &ChatActionContext::focus_heal_targets;
+        creators["raid run go chat"] = &ChatActionContext::raid_run_go_chat;
+        creators["raid run pause chat"] = &ChatActionContext::raid_run_pause_chat;
+        creators["raid run stop chat"] = &ChatActionContext::raid_run_stop_chat;
+        creators["raid run status chat"] = &ChatActionContext::raid_run_status_chat;
+        creators["raid run record chat"] = &ChatActionContext::raid_run_record_chat;
     }
 
 private:
@@ -328,6 +334,11 @@ private:
     static Action* roll_action(PlayerbotAI* botAI) { return new RollAction(botAI); }
     static Action* wait_for_attack_time(PlayerbotAI* botAI) { return new SetWaitForAttackTimeAction(botAI); }
     static Action* focus_heal_targets(PlayerbotAI* botAI) { return new SetFocusHealTargetsAction(botAI); }
+    static Action* raid_run_go_chat(PlayerbotAI* botAI) { return new RaidRunGoChatAction(botAI); }
+    static Action* raid_run_pause_chat(PlayerbotAI* botAI) { return new RaidRunPauseChatAction(botAI); }
+    static Action* raid_run_stop_chat(PlayerbotAI* botAI) { return new RaidRunStopChatAction(botAI); }
+    static Action* raid_run_status_chat(PlayerbotAI* botAI) { return new RaidRunStatusChatAction(botAI); }
+    static Action* raid_run_record_chat(PlayerbotAI* botAI) { return new RaidRunRecordChatAction(botAI); }
 };
 
 #endif

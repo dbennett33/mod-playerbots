@@ -23,6 +23,8 @@ public:
     virtual std::string const GetTargetName() { return ""; }
     virtual WorldLocation GetLocation() { return NullLocation; }
     virtual float GetMaxDistance() { return sPlayerbotAIConfig.followDistance; }
+    // Offset-from-leader formations should use MoveFollow instead of MoveTo every tick.
+    virtual bool PreferFollowMotion() const { return false; }
     static WorldLocation NullLocation;
     static bool IsNullLocation(WorldLocation const& loc);
 
@@ -34,6 +36,8 @@ class FollowFormation : public Formation
 {
 public:
     FollowFormation(PlayerbotAI* botAI, std::string const name) : Formation(botAI, name) {}
+
+    bool PreferFollowMotion() const override { return true; }
 };
 
 class MoveFormation : public Formation

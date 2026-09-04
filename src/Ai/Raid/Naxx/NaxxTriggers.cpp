@@ -5,6 +5,7 @@
  */
 
 #include "NaxxTriggers.h"
+#include "NaxxActions.h"
 #include "NaxxSpellIds.h"
 #include "Playerbots.h"
 #include "Timer.h"
@@ -81,25 +82,23 @@ bool GrobbulusCloudTrigger::IsActive()
     return true;
 }
 
-//bool HeiganMeleeTrigger::IsActive()
-//{
-//    Unit* heigan = AI_VALUE2(Unit*, "find target", "heigan the unclean");
-//    if (!heigan)
-//    {
-//        return false;
-//    }
-//    return !botAI->IsRanged(bot);
-//}
-//
-//bool HeiganRangedTrigger::IsActive()
-//{
-//    Unit* heigan = AI_VALUE2(Unit*, "find target", "heigan the unclean");
-//    if (!heigan)
-//    {
-//        return false;
-//    }
-//    return botAI->IsRanged(bot);
-//}
+bool HeiganMeleeTrigger::IsActive()
+{
+    Unit* heigan = AI_VALUE2(Unit*, "find target", "heigan the unclean");
+    if (!heigan || !heigan->IsAlive() || !heigan->IsInCombat())
+        return false;
+
+    return !botAI->IsRanged(bot);
+}
+
+bool HeiganRangedTrigger::IsActive()
+{
+    Unit* heigan = AI_VALUE2(Unit*, "find target", "heigan the unclean");
+    if (!heigan || !heigan->IsAlive() || !heigan->IsInCombat())
+        return false;
+
+    return botAI->IsRanged(bot);
+}
 
 bool RazuviousTankTrigger::IsActive()
 {
@@ -205,6 +204,18 @@ bool MaexxnaTrigger::IsActive()
     return !botAI->IsTank(bot);
 }
 
+bool MaexxnaWebWrapTrigger::IsActive()
+{
+    if (botAI->IsMainTank(bot) || !botAI->IsRanged(bot))
+        return false;
+
+    Unit* boss = AI_VALUE2(Unit*, "find target", "maexxna");
+    if (!boss || !boss->IsAlive())
+        return false;
+
+    return HasMaexxnaWebWrap(bot);
+}
+
 //bool PatchwerkTankTrigger::IsActive()
 //{
 //    Unit* boss = AI_VALUE2(Unit*, "find target", "patchwerk");
@@ -259,4 +270,23 @@ bool ThaddiusPhaseThaddiusTrigger::IsActive()
         return false;
 
     return helper.IsPhaseThaddius();
+}
+
+bool EmbalmingSlimeMeleeTrigger::IsActive()
+{
+    if (!botAI->IsMelee(bot) || botAI->IsTank(bot))
+        return false;
+
+    GuidVector const npcs = AI_VALUE(GuidVector, "nearest npcs");
+    for (ObjectGuid const& guid : npcs)
+    {
+        Unit* unit = botAI->GetUnit(guid);
+        if (!unit || !unit->IsAlive() || unit->GetEntry() != NaxxSpellIds::NpcEmbalmingSlime)
+            continue;
+
+        if (bot->GetExactDist2d(unit) < 18.0f)
+            return true;
+    }
+
+    return false;
 }

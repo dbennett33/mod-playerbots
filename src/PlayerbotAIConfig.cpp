@@ -130,6 +130,14 @@ bool PlayerbotAIConfig::Initialize()
     lowMana = sConfigMgr->GetOption<int32>("AiPlayerbot.LowMana", 15);
     mediumMana = sConfigMgr->GetOption<int32>("AiPlayerbot.MediumMana", 40);
     highMana = sConfigMgr->GetOption<int32>("AiPlayerbot.HighMana", 65);
+    enableRaidRun = sConfigMgr->GetOption<bool>("AiPlayerbot.EnableRaidRun", false);
+    raidRunHealthThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunHealthThreshold", 85);
+    raidRunManaThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunManaThreshold", 65);
+    raidRunRegenTimeout = sConfigMgr->GetOption<int32>("AiPlayerbot.RaidRunRegenTimeout", 120);
+    raidRunBossReadyDistance = sConfigMgr->GetOption<float>("AiPlayerbot.RaidRunBossReadyDistance", 25.0f);
+    raidRunWipeMode = sConfigMgr->GetOption<uint32>("AiPlayerbot.RaidRunWipeMode", 0);
+    if (raidRunWipeMode > 2)
+        raidRunWipeMode = 0;
     autoSaveMana = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoSaveMana", true);
     saveManaThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.SaveManaThreshold", 60);
     switch (sConfigMgr->GetOption<uint32>("AiPlayerbot.AutoGreaterBlessings", 1))
@@ -237,7 +245,7 @@ bool PlayerbotAIConfig::Initialize()
         attunementQuests);
 
     LoadSet<std::set<uint32>>(
-        sConfigMgr->GetOption<std::string>("AiPlayerbot.UnobtainableItems", "12468,44869,44870,46978"),
+        sConfigMgr->GetOption<std::string>("AiPlayerbot.UnobtainableItems", "12468,44869,44870,46978,49686"),
         unobtainableItems);
 
     botAutologin = sConfigMgr->GetOption<bool>("AiPlayerbot.BotAutologin", false);
@@ -669,7 +677,7 @@ bool PlayerbotAIConfig::Initialize()
     autoGearCommand = sConfigMgr->GetOption<int32>("AiPlayerbot.AutoGearCommand", 1);
     autoGearCommandAltBots = sConfigMgr->GetOption<int32>("AiPlayerbot.AutoGearCommandAltBots", 1);
     autoGearBisCommand = sConfigMgr->GetOption<int32>("AiPlayerbot.AutoGearBisCommand", 0);
-    autoGearQualityLimit = sConfigMgr->GetOption<int32>("AiPlayerbot.AutoGearQualityLimit", 3);
+    autoGearQualityLimit = sConfigMgr->GetOption<int32>("AiPlayerbot.AutoGearQualityLimit", 4);
     autoGearScoreLimit = sConfigMgr->GetOption<int32>("AiPlayerbot.AutoGearScoreLimit", 0);
 
     randomBotXPRate = sConfigMgr->GetOption<float>("AiPlayerbot.RandomBotXPRate", 1.0);
@@ -704,6 +712,7 @@ bool PlayerbotAIConfig::Initialize()
 
     // SPP automation
     freeMethodLoot = sConfigMgr->GetOption<bool>("AiPlayerbot.FreeMethodLoot", false);
+    lootCorpses = sConfigMgr->GetOption<bool>("AiPlayerbot.LootCorpses", true);
     lootNeedRollLevel = sConfigMgr->GetOption<int32>("AiPlayerbot.LootNeedRollLevel", 1);
     lootRollRecipe = sConfigMgr->GetOption<bool>("AiPlayerbot.LootRollRecipe", false);
     lootRollDisenchant = sConfigMgr->GetOption<bool>("AiPlayerbot.LootRollDisenchant", false);

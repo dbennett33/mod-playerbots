@@ -26,14 +26,18 @@ void RaidNaxxStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         { NextAction("rotate grobbulus", ACTION_RAID + 1) }
     ));
 
-    // Heigan the Unclean
-    //triggers.push_back(new TriggerNode("heigan melee",
-    //    { NextAction("heigan dance melee", ACTION_RAID + 1) }
-    //));
+    triggers.push_back(new TriggerNode("embalming slime melee",
+        { NextAction("embalming slime stay clear", ACTION_RAID + 2) }
+    ));
 
-    //triggers.push_back(new TriggerNode("heigan ranged",
-    //    { NextAction("heigan dance ranged", ACTION_RAID + 1) }
-    //));
+    // Heigan the Unclean
+    triggers.push_back(new TriggerNode("heigan melee",
+        { NextAction("heigan dance melee", ACTION_RAID + 2) }
+    ));
+
+    triggers.push_back(new TriggerNode("heigan ranged",
+        { NextAction("heigan dance ranged", ACTION_RAID + 2) }
+    ));
 
     // Kel'Thuzad
     triggers.push_back(
@@ -54,7 +58,12 @@ void RaidNaxxStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         { NextAction("avoid aoe", ACTION_RAID + 1) }
     ));
 
-    // Maexxna
+    // Maexxna — web wraps (16486) use NullCreatureAI and never appear on "attackers".
+    // Ranged break cocoons from the floor; melee stay on the boss.
+    triggers.push_back(new TriggerNode("maexxna web wrap",
+        { NextAction("maexxna choose target", ACTION_RAID + 3) }
+    ));
+
     triggers.push_back(
         new TriggerNode("maexxna",
         {
@@ -148,13 +157,16 @@ void RaidNaxxStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 void RaidNaxxStrategy::InitMultipliers(std::vector<Multiplier*>& multipliers)
 {
     multipliers.push_back(new GrobbulusMultiplier(botAI));
-    //multipliers.push_back(new HeiganDanceMultiplier(botAI));
+    multipliers.push_back(new EmbalmingSlimeMultiplier(botAI));
+    multipliers.push_back(new HeiganDanceMultiplier(botAI));
+    multipliers.push_back(new NaxxDelayBloodlustMultiplier(botAI));
     multipliers.push_back(new LoathebGenericMultiplier(botAI));
     multipliers.push_back(new ThaddiusGenericMultiplier(botAI));
     multipliers.push_back(new SapphironGenericMultiplier(botAI));
     multipliers.push_back(new InstructorRazuviousGenericMultiplier(botAI));
     multipliers.push_back(new KelthuzadGenericMultiplier(botAI));
     multipliers.push_back(new AnubrekhanGenericMultiplier(botAI));
+    multipliers.push_back(new MaexxnaGenericMultiplier(botAI));
     multipliers.push_back(new FourHorsemenGenericMultiplier(botAI));
     // multipliers.push_back(new GothikGenericMultiplier(botAI));
     multipliers.push_back(new GluthGenericMultiplier(botAI));

@@ -50,6 +50,7 @@
 #include "OutfitAction.h"
 #include "PositionAction.h"
 #include "PullActions.h"
+#include "RaidRunActions.h"
 #include "RandomBotUpdateAction.h"
 #include "ReachTargetActions.h"
 #include "ReleaseSpiritAction.h"
@@ -279,6 +280,10 @@ public:
         creators["new rpg travel flight"] = &ActionContext::new_rpg_travel_flight;
         creators["new rpg outdoor pvp"] = &ActionContext::new_rpg_outdoor_pvp;
         creators["wait for attack keep safe distance"] = &ActionContext::wait_for_attack_keep_safe_distance;
+        creators["raid run leader"] = &ActionContext::raid_run_leader;
+        creators["raid run follow tank"] = &ActionContext::raid_run_follow_tank;
+        creators["raid run regen"] = &ActionContext::raid_run_regen;
+        creators["raid run resurrect"] = &ActionContext::raid_run_resurrect;
     }
 
 private:
@@ -486,6 +491,10 @@ private:
     static Action* new_rpg_travel_flight(PlayerbotAI* ai) { return new NewRpgTravelFlightAction(ai); }
     static Action* new_rpg_outdoor_pvp(PlayerbotAI* ai) { return new NewRpgOutdoorPvpAction(ai); }
     static Action* wait_for_attack_keep_safe_distance(PlayerbotAI* ai) { return new WaitForAttackKeepSafeDistanceAction(ai); }
+    static Action* raid_run_leader(PlayerbotAI* botAI) { return new RaidRunLeaderAction(botAI); }
+    static Action* raid_run_follow_tank(PlayerbotAI* botAI) { return new RaidRunFollowTankAction(botAI); }
+    static Action* raid_run_regen(PlayerbotAI* botAI) { return new RaidRunRegenAction(botAI); }
+    static Action* raid_run_resurrect(PlayerbotAI* botAI) { return new RaidRunResurrectAction(botAI); }
 };
 
 #endif

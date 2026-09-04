@@ -26,6 +26,7 @@
 #include "PlayerbotWorldThreadProcessor.h"
 #include "Playerbots.h"
 #include "RandomPlayerbotMgr.h"
+#include "RaidRunRecorder.h"
 #include "SharedDefines.h"
 #include "WorldSession.h"
 #include "WorldSessionMgr.h"
@@ -1487,6 +1488,8 @@ void PlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
 {
     SetNextCheckDelay(sPlayerbotAIConfig.reactDelay);
     CheckTellErrors(elapsed);
+    if (Player* owner = GetMaster())
+        sRaidRunRecorder.Update(owner);
 }
 
 void PlayerbotMgr::HandleCommand(uint32 type, std::string const text)

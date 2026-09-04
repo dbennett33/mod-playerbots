@@ -74,6 +74,20 @@ Unit* ServerFacade::GetChaseTarget(Unit* target)
     return nullptr;
 }
 
+Unit* ServerFacade::GetFollowTarget(Unit* target)
+{
+    MovementGenerator* movementGen = target->GetMotionMaster()->top();
+    if (movementGen && movementGen->GetMovementGeneratorType() == FOLLOW_MOTION_TYPE)
+    {
+        if (target->IsPlayer())
+            return static_cast<FollowMovementGenerator<Player> const*>(movementGen)->GetTarget();
+
+        return static_cast<FollowMovementGenerator<Creature> const*>(movementGen)->GetTarget();
+    }
+
+    return nullptr;
+}
+
 void ServerFacade::SendPacket(Player* player, WorldPacket* packet)
 {
     player->GetSession()->SendPacket(packet);

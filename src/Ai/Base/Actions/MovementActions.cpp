@@ -24,6 +24,7 @@
 #include "Position.h"
 #include "PositionValue.h"
 #include "Random.h"
+#include "RaidRunMgr.h"
 #include "ServerFacade.h"
 #include "SharedDefines.h"
 #include "SpellAuraEffects.h"
@@ -34,10 +35,19 @@
 #include "Vehicle.h"
 #include "WaypointMovementGenerator.h"
 #include "G3D/Vector3.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
 #include <string>
+
+namespace
+{
+float MoveRepathDistance()
+{
+    return std::max(2.0f, sPlayerbotAIConfig.targetPosRecalcDistance);
+}
+}
 
 MovementAction::MovementAction(PlayerbotAI* botAI, std::string const name) : Action(botAI, name)
 {
@@ -65,11 +75,19 @@ bool MovementAction::JumpTo(uint32 mapId, float x, float y, float z, MovementPri
     if (!IsMovingAllowed())
         return false;
 
-    if (IsDuplicateMove(x, y, z))
-        return false;
+    if (RaidRunMgr::IsInActiveRaidRun(bot))
+    {
+        if (ShouldKeepCurrentMove(x, y, z, priority))
+            return true;
+    }
+    else
+    {
+        if (IsDuplicateMove(x, y, z))
+            return false;
 
-    if (IsWaitingForLastMove(priority))
-        return false;
+        if (IsWaitingForLastMove(priority))
+            return false;
+    }
 
     float speed = bot->GetSpeed(MOVE_RUN);
     MotionMaster& mm = *bot->GetMotionMaster();
@@ -174,13 +192,18 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool /*idle
     {
         return false;
     }
-    if (IsDuplicateMove(x, y, z))
+    if (RaidRunMgr::IsInActiveRaidRun(bot))
     {
-        return false;
+        if (ShouldKeepCurrentMove(x, y, z, priority))
+            return true;
     }
-    if (IsWaitingForLastMove(priority))
+    else
     {
-        return false;
+        if (IsDuplicateMove(x, y, z))
+            return false;
+
+        if (IsWaitingForLastMove(priority))
+            return false;
     }
 
     bool generatePath = !bot->IsFlying() && !bot->isSwimming();
@@ -896,13 +919,13 @@ bool MovementAction::IsMovingAllowed(WorldObject* target)
     return IsMovingAllowed();
 }
 
-bool MovementAction::IsDuplicateMove(float x, float y, float z)
+bool MovementAction::IsDuplicateMove(float x, float y, float /*z*/)
 {
     LastMovement& lastMove = *context->GetValue<LastMovement&>("last movement");
 
-    // heuristic 5s
+    // Ignore Z: SearchForBestPath remaps height, which used to make the same walk look new every tick.
     if (lastMove.msTime + sPlayerbotAIConfig.maxWaitForMove < getMSTime() ||
-        lastMove.lastMoveShort.GetExactDist(x, y, z) > 0.01f)
+        lastMove.lastMoveShort.GetExactDist2d(x, y) > MoveRepathDistance())
         return false;
 
     return true;
@@ -920,6 +943,21 @@ bool MovementAction::IsWaitingForLastMove(MovementPriority priority)
         return true;
 
     return false;
+}
+
+bool MovementAction::ShouldKeepCurrentMove(float x, float y, float /*z*/, MovementPriority priority)
+{
+    LastMovement& lastMove = *context->GetValue<LastMovement&>("last movement");
+    if (priority > lastMove.priority)
+        return false;
+
+    if (!bot->isMoving())
+        return false;
+
+    if (lastMove.lastMoveShort.GetExactDist2d(x, y) <= MoveRepathDistance())
+        return true;
+
+    return IsWaitingForLastMove(priority);
 }
 
 bool MovementAction::IsMovingAllowed()
@@ -1100,12 +1138,11 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
     if (!target)
         return false;
 
-    if (!bot->InBattleground() && ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
-                                                                           sPlayerbotAIConfig.followDistance))
-    {
-        // botAI->TellError("No need to follow");
+    bool const inRaidRun = RaidRunMgr::IsInActiveRaidRun(bot);
+    if (!inRaidRun && !bot->InBattleground() &&
+        ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
+                                                           sPlayerbotAIConfig.followDistance))
         return false;
-    }
 
     /*
     if (!bot->InBattleground()
@@ -1224,24 +1261,31 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
             return MoveTo(target, sPlayerbotAIConfig.followDistance);
     }
 
-    if (ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
-                                                 sPlayerbotAIConfig.followDistance))
+    if (inRaidRun)
     {
-        // botAI->TellError("No need to follow");
-        return false;
+        if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
+        {
+            Unit* currentTarget = ServerFacade::instance().GetFollowTarget(bot);
+            if (currentTarget && currentTarget->GetGUID() == target->GetGUID())
+                return true;
+        }
     }
+    else if (ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
+                                                               sPlayerbotAIConfig.followDistance))
+        return false;
 
     if (target->IsFriendlyTo(bot) && bot->IsMounted() && AI_VALUE(GuidVector, "all targets").empty())
         distance += angle;
 
-    if (!bot->InBattleground() && ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
-                                                                           sPlayerbotAIConfig.followDistance))
+    if (!inRaidRun)
     {
-        // botAI->TellError("No need to follow");
-        return false;
-    }
+        if (!bot->InBattleground() &&
+            ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target),
+                                                               sPlayerbotAIConfig.followDistance))
+            return false;
 
-    bot->HandleEmoteCommand(0);
+        bot->HandleEmoteCommand(0);
+    }
 
     if (bot->IsSitState())
         bot->SetStandState(UNIT_STAND_STATE_STAND);
@@ -1252,10 +1296,10 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
         botAI->InterruptSpell();
     }
 
-    // AI_VALUE(LastMovement&, "last movement").Set(target);
     ClearIdleState();
-
-    if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
+    if (inRaidRun)
+        AI_VALUE(LastMovement&, "last movement").Set(target);
+    else if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
     {
         Unit* currentTarget = ServerFacade::instance().GetChaseTarget(bot);
         if (currentTarget && currentTarget->GetGUID() == target->GetGUID())
@@ -1720,19 +1764,31 @@ const Movement::PointsArray MovementAction::SearchForBestPath(float x, float y, 
 {
     bool found = false;
     modified_z = INVALID_HEIGHT;
+    bool const raidRun = RaidRunMgr::IsInActiveRaidRun(bot);
+    auto const sameFloor = [z, raidRun](float candidateZ) -> bool
+    {
+        if (candidateZ == INVALID_HEIGHT)
+            return false;
+
+        if (!raidRun)
+            return true;
+
+        // Grobbulus's lab stacks over the Construct halls. Never pick a floor ~one storey off dest Z.
+        return std::fabs(candidateZ - z) <= 8.0f;
+    };
     float tempZ = bot->GetMapHeight(x, y, z);
     PathGenerator gen(bot);
     gen.CalculatePath(x, y, tempZ);
     Movement::PointsArray result = gen.GetPath();
     float min_length = gen.getPathLength();
     int typeOk = PATHFIND_NORMAL | PATHFIND_INCOMPLETE;
-    if ((gen.GetPathType() & typeOk) && abs(tempZ - z) < 0.5f)
+    if ((gen.GetPathType() & typeOk) && sameFloor(tempZ) && abs(tempZ - z) < 0.5f)
     {
         modified_z = tempZ;
         return result;
     }
     // Start searching
-    if (gen.GetPathType() & typeOk)
+    if ((gen.GetPathType() & typeOk) && sameFloor(tempZ))
     {
         modified_z = tempZ;
         found = true;
@@ -1741,7 +1797,7 @@ const Movement::PointsArray MovementAction::SearchForBestPath(float x, float y, 
     for (float delta = step; count < maxSearchCount / 2 + 1; count++, delta += step)
     {
         tempZ = bot->GetMapHeight(x, y, z + delta);
-        if (tempZ == INVALID_HEIGHT)
+        if (!sameFloor(tempZ))
         {
             continue;
         }
@@ -1758,7 +1814,7 @@ const Movement::PointsArray MovementAction::SearchForBestPath(float x, float y, 
     for (float delta = -step; count < maxSearchCount; count++, delta -= step)
     {
         tempZ = bot->GetMapHeight(x, y, z + delta);
-        if (tempZ == INVALID_HEIGHT)
+        if (!sameFloor(tempZ))
         {
             continue;
         }
@@ -1798,6 +1854,19 @@ void MovementAction::DoMovePoint(Unit* unit, float x, float y, float z, bool gen
     {
         float gZ = unit->GetMapWaterOrGroundLevel(unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ());
         unit->UpdatePosition(unit->GetPositionX(), unit->GetPositionY(), gZ, false);
+    }
+
+    if (!backwards && RaidRunMgr::IsInActiveRaidRun(bot))
+    {
+        float destX = 0.0f;
+        float destY = 0.0f;
+        float destZ = 0.0f;
+        if (mm->GetDestination(destX, destY, destZ))
+        {
+            Position requested(x, y, z);
+            if (requested.GetExactDist2d(destX, destY) <= MoveRepathDistance())
+                return;
+        }
     }
 
     mm->Clear();

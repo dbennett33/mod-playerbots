@@ -1,10 +1,8 @@
 name: windows-build
 
+# Manual only — automatic builds go through AzerothCore vps-build (trigger-vps-build.yml).
 on:
-  push:
-    branches: [ "master", "test-staging" ]
-  pull_request:
-    branches: [ "master", "test-staging" ]
+  workflow_dispatch:
 
 concurrency:
   group: "windows-build-${{ github.event.pull_request.number || github.ref }}"

@@ -538,13 +538,20 @@ bool TankAssistTrigger::IsActive()
     if (!AI_VALUE(uint8, "attacker count"))
         return false;
 
+    Unit* tankTarget = AI_VALUE(Unit*, "tank target");
+    if (!tankTarget)
+        return false;
+
     Unit* currentTarget = AI_VALUE(Unit*, "current target");
+    if (currentTarget == tankTarget)
+        return false;
+
     if (!currentTarget)
         return true;
 
-    Unit* tankTarget = AI_VALUE(Unit*, "tank target");
-    if (!tankTarget || currentTarget == tankTarget)
-        return false;
+    // Off-tank: switch onto loose adds even while hitting the main tank's boss.
+    if (botAI->IsAssistTank(bot))
+        return true;
 
     return AI_VALUE2(bool, "has aggro", "current target");
 }

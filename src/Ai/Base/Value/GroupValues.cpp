@@ -5,7 +5,9 @@
  */
 
 #include "GroupValues.h"
+#include "ObjectAccessor.h"
 #include "Playerbots.h"
+#include "RaidRunMgr.h"
 #include "ServerFacade.h"
 
 GuidVector GroupMembersValue::Calculate()
@@ -172,3 +174,55 @@ bool GroupReadyValue::Calculate()
 
     return true;
 };
+
+bool RaidGroupReadyValue::Calculate()
+{
+    Player* anchor = bot;
+    Player* master = botAI->GetMaster();
+    RaidRunState const* state = master ? sRaidRunMgr.GetState(master) : nullptr;
+    if (state && !state->leaderTankGuid.IsEmpty())
+        if (Player* tank = ObjectAccessor::FindPlayer(state->leaderTankGuid))
+            anchor = tank;
+
+    uint32 const healthThreshold = sPlayerbotAIConfig.raidRunHealthThreshold;
+    uint32 const manaThreshold = sPlayerbotAIConfig.raidRunManaThreshold;
+
+    Group* group = bot->GetGroup();
+    if (!group)
+    {
+        if (bot->GetHealthPct() < healthThreshold)
+            return false;
+
+        if (bot->getStandState() == UNIT_STAND_STATE_SIT)
+            return false;
+
+        if (bot->GetPower(POWER_MANA) && bot->GetPowerPct(POWER_MANA) < manaThreshold)
+            return false;
+
+        return true;
+    }
+
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (!member || member->GetMapId() != bot->GetMapId())
+            continue;
+
+        if (!member->IsAlive())
+            return false;
+
+        if (ServerFacade::instance().GetDistance2d(member, anchor) > sPlayerbotAIConfig.sightDistance)
+            continue;
+
+        if (member->getStandState() == UNIT_STAND_STATE_SIT)
+            return false;
+
+        if (member->GetHealthPct() < healthThreshold)
+            return false;
+
+        if (member->GetPower(POWER_MANA) && member->GetPowerPct(POWER_MANA) < manaThreshold)
+            return false;
+    }
+
+    return true;
+}

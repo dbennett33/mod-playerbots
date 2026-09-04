@@ -20,9 +20,10 @@ public:
         creators["rotate grobbulus"] = &RaidNaxxActionContext::rotate_grobbulus;
         creators["grobbulus move center"] = &RaidNaxxActionContext::grobbulus_move_center;
         creators["grobbulus move away"] = &RaidNaxxActionContext::grobbulus_move_away;
+        creators["embalming slime stay clear"] = &RaidNaxxActionContext::embalming_slime_stay_clear;
 
-        //creators["heigan dance melee"] = &RaidNaxxActionContext::heigan_dance_melee;
-        //creators["heigan dance ranged"] = &RaidNaxxActionContext::heigan_dance_ranged;
+        creators["heigan dance melee"] = &RaidNaxxActionContext::heigan_dance_melee;
+        creators["heigan dance ranged"] = &RaidNaxxActionContext::heigan_dance_ranged;
         creators["thaddius attack nearest pet"] = &RaidNaxxActionContext::thaddius_attack_nearest_pet;
         // creators["thaddius melee to place"] = &RaidNaxxActionContext::thaddius_tank_to_place;
         // creators["thaddius ranged to place"] = &RaidNaxxActionContext::thaddius_ranged_to_place;
@@ -44,6 +45,8 @@ public:
         creators["anub'rekhan choose target"] = &RaidNaxxActionContext::anubrekhan_choose_target;
         creators["anub'rekhan position"] = &RaidNaxxActionContext::anubrekhan_position;
 
+        creators["maexxna choose target"] = &RaidNaxxActionContext::maexxna_choose_target;
+
         creators["gluth choose target"] = &RaidNaxxActionContext::gluth_choose_target;
         creators["gluth position"] = &RaidNaxxActionContext::gluth_position;
         creators["gluth slowdown"] = &RaidNaxxActionContext::gluth_slowdown;
@@ -59,8 +62,9 @@ private:
     static Action* rotate_grobbulus(PlayerbotAI* ai) { return new GrobbulusRotateAction(ai); }
     static Action* grobbulus_move_center(PlayerbotAI* ai) { return new GrobbulusMoveCenterAction(ai); }
     static Action* grobbulus_move_away(PlayerbotAI* ai) { return new GrobbulusMoveAwayAction(ai); }
-    //static Action* heigan_dance_melee(PlayerbotAI* ai) { return new HeiganDanceMeleeAction(ai); }
-    //static Action* heigan_dance_ranged(PlayerbotAI* ai) { return new HeiganDanceRangedAction(ai); }
+    static Action* embalming_slime_stay_clear(PlayerbotAI* ai) { return new EmbalmingSlimeStayClearAction(ai); }
+    static Action* heigan_dance_melee(PlayerbotAI* ai) { return new HeiganDanceMeleeAction(ai); }
+    static Action* heigan_dance_ranged(PlayerbotAI* ai) { return new HeiganDanceRangedAction(ai); }
     static Action* thaddius_attack_nearest_pet(PlayerbotAI* ai) { return new ThaddiusAttackNearestPetAction(ai); }
     // static Action* thaddius_tank_to_place(PlayerbotAI* ai) { return new ThaddiusMeleeToPlaceAction(ai); }
     // static Action* thaddius_ranged_to_place(PlayerbotAI* ai) { return new ThaddiusRangedToPlaceAction(ai); }
@@ -82,6 +86,7 @@ private:
     static Action* kelthuzad_position(PlayerbotAI* ai) { return new KelthuzadPositionAction(ai); }
     static Action* anubrekhan_choose_target(PlayerbotAI* ai) { return new AnubrekhanChooseTargetAction(ai); }
     static Action* anubrekhan_position(PlayerbotAI* ai) { return new AnubrekhanPositionAction(ai); }
+    static Action* maexxna_choose_target(PlayerbotAI* ai) { return new MaexxnaChooseTargetAction(ai); }
     static Action* gluth_choose_target(PlayerbotAI* ai) { return new GluthChooseTargetAction(ai); }
     static Action* gluth_position(PlayerbotAI* ai) { return new GluthPositionAction(ai); }
     static Action* gluth_slowdown(PlayerbotAI* ai) { return new GluthSlowdownAction(ai); }
