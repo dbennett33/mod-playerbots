@@ -20,73 +20,104 @@
 
 namespace
 {
-// Arachnid wing (map 533). Hub center is 3005,-3434,304 (DK portal). Do not waypoint that —
-// it pulls the raid into the middle of the start room. Spider door is east (Anub room edge
-// 3195,-3476, Z 287). Do not use 3125,-3310 — that is Patchwerk's hallway.
+// Arachnid wing (map 533). Rebuilt 2026-09-04 from base-DB spawn + gameobject data
+// (.agents/plans/raid-run-automation/spawn-data/): every travel pin is a trash-pack
+// centroid or an instance door, so X/Y/Z are ground-verified.
 //
-// Faerlina -> Maexxna is a U-shaped hallway (web south, west, south, then east). A straight line from
-// Faerlina toward Maexxna hits the room's SE wall and clips through, skipping the trash packs.
-// Hallway pins use clearRadius so the tank stops on each spider pack instead of running through.
+// Flow per instance_naxxramas.cpp doors: enter through ANUB_GATE 181126 (3202,-3476),
+// kill Anub, leave BACK through the room door and head SOUTH to ANUB_NEXT_GATE 181195
+// (3144,-3572; opens on Anub kill), flat z287 hall SE, ramp down at (3297,-3707) to
+// FAERLINA_WEB 181235 (3318,-3695) — her room door, z259. After Faerlina: back out the
+// web, up over the z287 web hump, down to the z274 lower hall, west through
+// FAERLINA_GATE 194022 (3122,-3788), south corner, then the east ramp up to z294 and
+// MAEXXNA_GATE 181209 (3427,-3846).
 //
-// Faerlina room cultists (15980) / acolytes (15981) are in formation with her (groupAI member-assist).
-// Pulling her with packs up brings the rest of the room. Path east wall, then south, then west.
+// The old route left Anub's platform to the SE (3273,-3510 -> 3320,-3570): the game
+// data has no door or corridor there — that was the post-Anub wall-run.
+//
+// Faerlina room cultists (15980) / acolytes (15981) sit in four 8-packs in formation
+// with her (groupAI member-assist). Clear all four before pulling her.
 std::vector<RaidRunRouteStep> const arachnidSteps =
 {
-    { "Arachnid entrance", 3175.0f, -3476.0f, 287.50f, 533, 0, 12.0f, 0.0f },
+    // Zone-in point (game_tele 5191). Safe wipe-recovery anchor: always on-mesh.
+    { "Naxx entrance", 3005.68f, -3447.77f, 293.93f, 533, 0, 12.0f, 0.0f },
+    { "Arachnid hall", 3111.80f, -3493.50f, 287.10f, 533, 0, 10.0f, 0.0f, 18.0f },
+    { "Anub door", 3186.50f, -3477.20f, 287.10f, 533, 0, 10.0f, 0.0f, 16.0f },
     // Anub spawn (east end). Do not use room center 3273,-3477 — that drags him off the door.
     { "Anub'Rekhan", 3308.59f, -3476.29f, 287.16f, 533, 15956, 10.0f, 40.0f },
-    // Stay on the platform. 3210 is past the west slime; mmap walks the outer ring to get there.
-    // South ramp starts at the platform edge (~Y -3510), not out in the moat at -3530.
-    { "Anub exit", 3245.0f, -3476.0f, 287.16f, 533, 0, 12.0f, 0.0f },
-    { "Anub-Faerlina ramp top", 3273.0f, -3510.0f, 287.16f, 533, 0, 12.0f, 0.0f },
-    { "Anub-Faerlina ramp mid", 3300.0f, -3555.0f, 276.0f, 533, 0, 12.0f, 0.0f },
-    { "Anub-Faerlina ramp bot", 3320.0f, -3570.0f, 265.0f, 533, 0, 12.0f, 0.0f },
-    { "Faerlina corridor", 3330.0f, -3580.0f, 265.0f, 533, 0, 12.0f, 0.0f },
-    // Stay east of her 20yd detection while walking south to the packs behind the platform.
-    { "Faerlina east wall", 3385.0f, -3588.0f, 261.08f, 533, 0, 12.0f, 0.0f },
-    { "Faerlina left front", 3372.0f, -3648.0f, 259.17f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Faerlina left rear", 3375.0f, -3669.0f, 259.17f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Faerlina right rear", 3327.0f, -3669.0f, 259.17f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Faerlina right front", 3334.0f, -3648.0f, 259.17f, 533, 0, 10.0f, 0.0f, 16.0f },
+    // Back out west through the room door (181126, opens after the kill), then south.
+    { "Anub room west", 3202.70f, -3475.90f, 287.00f, 533, 0, 12.0f, 0.0f },
+    { "Anub exit hall", 3145.90f, -3536.30f, 287.10f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Anub exit gate", 3144.00f, -3572.20f, 287.10f, 533, 0, 12.0f, 0.0f },
+    // Wide flat hall (all z287.1) heading SE toward Faerlina's overlook.
+    { "Spider hall east", 3205.20f, -3578.40f, 287.10f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Spider hall south", 3148.10f, -3635.10f, 287.10f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Spider hall bend", 3195.30f, -3645.00f, 287.10f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Faerlina hall", 3224.70f, -3653.60f, 287.10f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Faerlina overlook", 3240.80f, -3688.20f, 287.10f, 533, 0, 10.0f, 0.0f, 14.0f },
+    // Skitterer pack on the descent into her room.
+    { "Faerlina ramp", 3297.30f, -3707.30f, 270.50f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Faerlina web door", 3318.70f, -3695.80f, 259.10f, 533, 0, 12.0f, 0.0f },
+    { "Faerlina right front", 3334.40f, -3648.10f, 259.20f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Faerlina right rear", 3328.00f, -3669.50f, 259.20f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Faerlina left rear", 3375.90f, -3669.90f, 259.20f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Faerlina left front", 3370.40f, -3648.10f, 259.20f, 533, 0, 10.0f, 0.0f, 16.0f },
     { "Grand Widow Faerlina", 3353.25f, -3620.10f, 261.08f, 533, 15953, 10.0f, 40.0f, 70.0f },
-    { "Faerlina south", 3350.0f, -3660.0f, 261.08f, 533, 0, 12.0f, 0.0f },
-    { "Faerlina web", 3318.0f, -3692.0f, 259.10f, 533, 0, 12.0f, 0.0f },
-    { "Maexxna ramp", 3298.0f, -3710.0f, 268.00f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Maexxna landing", 3240.0f, -3690.0f, 287.16f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Maexxna descent", 3235.0f, -3745.0f, 281.00f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Maexxna descent floor", 3244.5f, -3768.7f, 276.50f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Maexxna lower hall", 3220.0f, -3795.0f, 274.03f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Maexxna west skitters", 3171.0f, -3802.8f, 273.95f, 533, 0, 10.0f, 0.0f, 14.0f },
-    { "Maexxna west hall", 3148.0f, -3782.0f, 274.03f, 533, 0, 10.0f, 0.0f, 14.0f },
-    { "Maexxna south corner", 3112.0f, -3880.0f, 267.60f, 533, 0, 10.0f, 0.0f, 20.0f },
-    { "Maexxna south ramp", 3224.0f, -3877.0f, 284.56f, 533, 0, 10.0f, 0.0f, 12.0f },
-    { "Maexxna south venoms", 3284.7f, -3898.3f, 294.66f, 533, 0, 10.0f, 0.0f, 14.0f },
-    { "Maexxna south hall", 3310.0f, -3880.0f, 294.66f, 533, 0, 10.0f, 0.0f, 14.0f },
-    { "Maexxna gate", 3410.0f, -3824.0f, 294.75f, 533, 0, 10.0f, 0.0f, 16.0f },
+    // Exit through the web door again, up over the z287 hump, down to the lower hall.
+    { "Faerlina web exit", 3318.70f, -3695.80f, 259.10f, 533, 0, 12.0f, 0.0f },
+    { "Maexxna ramp", 3297.30f, -3707.30f, 270.50f, 533, 0, 12.0f, 0.0f },
+    { "Maexxna landing", 3240.80f, -3688.20f, 287.10f, 533, 0, 12.0f, 0.0f },
+    { "Maexxna descent", 3229.40f, -3738.50f, 282.70f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Maexxna descent floor", 3244.50f, -3768.70f, 275.90f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Maexxna lower hall", 3221.70f, -3798.60f, 274.00f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Maexxna west skitters", 3171.10f, -3802.80f, 273.90f, 533, 0, 10.0f, 0.0f, 14.0f },
+    // Creeper pack in front of FAERLINA_GATE 194022.
+    { "Maexxna west hall", 3144.70f, -3780.00f, 274.00f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Maexxna south corner", 3109.00f, -3880.40f, 267.60f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Maexxna south ramp", 3224.40f, -3876.80f, 284.60f, 533, 0, 10.0f, 0.0f, 12.0f },
+    { "Maexxna south venoms", 3293.30f, -3906.70f, 294.70f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Maexxna south hall", 3312.30f, -3879.00f, 294.70f, 533, 0, 10.0f, 0.0f, 14.0f },
+    // Pack in front of MAEXXNA_GATE 181209.
+    { "Maexxna gate", 3401.20f, -3823.30f, 294.70f, 533, 0, 10.0f, 0.0f, 16.0f },
     { "Maexxna", 3511.38f, -3921.58f, 299.51f, 533, 15952, 10.0f, 40.0f },
     // GO 181575 casts 28444 to hub 3005.51,-3434.64,304. Do not walk the wing backwards.
     { "Maexxna portal", 3465.16f, -3940.45f, 308.79f, 533, 0, 8.0f, 0.0f, 0.0f, 181575 }
 };
 
-// Construct quarter is north of the hub. Do not waypoint hub center 3005,-3434,304.
-// Sparse pins: walkway GPS (not the vat wall), then bosses. Extra Z pins on the Grobbulus
-// ramp only — that lab stacks over the first rooms and mmap will clip without them.
+// Construct quarter is north of the hub. Travel pins re-anchored 2026-09-04 to spawn
+// pack centroids / door GOs (same data set as Arachnid). Grobbulus ramp pins are the
+// in-game-GPS'd originals (no spawns live on the ramp) and now appear on the way DOWN
+// too — the old route jumped lab (z311) -> Gluth hall (z294) with no pins, which is a
+// stacked-floor clip hazard. Extra Z pins on the ramp only — the lab stacks over the
+// first rooms and mmap will clip without them.
 std::vector<RaidRunRouteStep> const constructSteps =
 {
-    { "Construct entrance", 3045.63f, -3395.20f, 299.39f, 533, 0, 12.0f, 0.0f },
-    { "Construct first", 3088.10f, -3352.53f, 299.39f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Construct second", 3092.59f, -3313.92f, 293.63f, 533, 0, 10.0f, 0.0f, 14.0f },
-    { "Construct hall", 3127.32f, -3266.78f, 294.17f, 533, 0, 10.0f, 0.0f, 20.0f },
-    { "Construct slime", 3111.25f, -3236.74f, 294.06f, 533, 0, 10.0f, 0.0f, 22.0f },
+    // Zone-in point (game_tele 5191). Safe wipe-recovery anchor.
+    { "Naxx entrance", 3005.68f, -3447.77f, 293.93f, 533, 0, 12.0f, 0.0f },
+    { "Construct entrance", 3046.70f, -3430.00f, 298.20f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Construct first", 3087.40f, -3367.60f, 298.40f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Construct second", 3078.30f, -3313.20f, 294.50f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Construct hall", 3106.20f, -3288.50f, 294.30f, 533, 0, 10.0f, 0.0f, 16.0f },
+    // Embalming Slime room (16 spawns) before Patchwerk.
+    { "Construct slime", 3135.90f, -3212.80f, 294.10f, 533, 0, 10.0f, 0.0f, 22.0f },
     { "Patchwerk", 3256.36f, -3230.33f, 294.06f, 533, 16028, 12.0f, 45.0f, 45.0f },
-    { "Patchwerk gate", 3317.40f, -3238.70f, 294.06f, 533, 0, 12.0f, 0.0f },
+    // GO 181123 (Patchwerk gate).
+    { "Patchwerk gate", 3318.00f, -3254.30f, 293.30f, 533, 0, 12.0f, 0.0f },
     { "Grobbulus ramp", 3295.0f, -3285.0f, 300.00f, 533, 0, 12.0f, 0.0f },
     { "Grobbulus ramp mid", 3285.0f, -3315.0f, 305.00f, 533, 0, 12.0f, 0.0f },
     { "Grobbulus ramp top", 3265.0f, -3345.0f, 309.00f, 533, 0, 12.0f, 0.0f },
     { "Grobbulus", 3227.58f, -3378.30f, 311.33f, 533, 15931, 12.0f, 45.0f, 40.0f },
-    { "Gluth hall", 3285.0f, -3200.0f, 294.15f, 533, 0, 12.0f, 0.0f },
+    // Walk back DOWN the same ramp — never straight-line from the lab to the hall below.
+    { "Grobbulus ramp down", 3285.0f, -3315.0f, 305.00f, 533, 0, 12.0f, 0.0f },
+    { "Patchwerk gate return", 3318.00f, -3254.30f, 293.30f, 533, 0, 12.0f, 0.0f },
+    { "Gluth hall", 3322.60f, -3226.70f, 294.10f, 533, 0, 10.0f, 0.0f, 14.0f },
     { "Gluth", 3283.09f, -3156.96f, 297.79f, 533, 15932, 12.0f, 45.0f, 35.0f },
+    // GO 181120 (Gluth gate).
     { "Gluth gate", 3339.16f, -3100.64f, 296.81f, 533, 0, 12.0f, 0.0f },
+    // WotLK geist/colossus packs between Gluth and Thaddius.
+    { "Geist hall", 3411.00f, -3084.50f, 294.70f, 533, 0, 10.0f, 0.0f, 18.0f },
+    { "Colossus hall", 3405.50f, -3034.00f, 295.20f, 533, 0, 10.0f, 0.0f, 16.0f },
+    // GO 181121 (Thaddius gate).
     { "Thaddius gate", 3421.86f, -3017.51f, 295.62f, 533, 0, 12.0f, 0.0f },
     // Walk to the low platform before pulling; bots on Feugen/Stalagg high bridges (Z 312)
     // cannot see Thaddius below (Z 302) so the phase-transition trigger never fires.
@@ -95,30 +126,48 @@ std::vector<RaidRunRouteStep> const constructSteps =
     { "Thaddius", 3513.84f, -2926.55f, 302.91f, 533, 15928, 15.0f, 80.0f, 0.0f }
 };
 
-// Plague quarter is west of the hub. Pins from instance doors/GOs (181198–181241, 181231)
-// and script positions (Noth home, Loatheb tank). Ramp 297→262 needs Z pins. Optional
-// recorder walk can still replace these if a pin clips.
+// Plague quarter is west of the hub. Re-anchored 2026-09-04: door pins are exact GO
+// spawns (181198-181241); the Noth->Heigan "bat tunnel" pins now use GROUND-mob Z
+// (larva/grub packs, z 253-266) — the old interpolated pins (z 267/273) floated ~10yd
+// above the real tunnel floor, so the leader could never satisfy the |Z|<=5 arrive
+// check there. The Loatheb pin now sits 22yd from his spawn (2909,-3997); the old pin
+// (2877,-3967) was 44yd out — outside the 40yd pull radius, so the pull never fired.
 std::vector<RaidRunRouteStep> const plagueSteps =
 {
-    { "Plague entrance", 2965.0f, -3476.0f, 297.60f, 533, 0, 12.0f, 0.0f },
+    // Zone-in point (game_tele 5191). Safe wipe-recovery anchor.
+    { "Naxx entrance", 3005.68f, -3447.77f, 293.93f, 533, 0, 12.0f, 0.0f },
+    // GO 181198 (Plague quarter entrance).
+    { "Plague entrance", 2963.20f, -3476.80f, 297.60f, 533, 0, 12.0f, 0.0f },
     { "Plague upper hall", 2905.0f, -3485.0f, 297.70f, 533, 0, 10.0f, 0.0f, 16.0f },
+    // GO 181199.
     { "Plague west hall", 2847.43f, -3489.47f, 297.84f, 533, 0, 10.0f, 0.0f, 16.0f },
     { "Noth ramp top", 2820.0f, -3489.0f, 290.00f, 533, 0, 12.0f, 0.0f },
     { "Noth ramp mid", 2785.0f, -3489.0f, 276.00f, 533, 0, 12.0f, 0.0f },
+    // GO 181200 (Noth entry).
     { "Noth door", 2737.66f, -3489.72f, 262.10f, 533, 0, 10.0f, 0.0f, 18.0f },
     { "Noth the Plaguebringer", 2684.94f, -3502.53f, 261.31f, 533, 15954, 12.0f, 40.0f, 30.0f },
+    // GO 181201 (Noth exit), then the bat tunnel: S-curve over the ground packs.
     { "Noth exit", 2684.28f, -3559.36f, 261.91f, 533, 0, 12.0f, 0.0f },
-    { "Heigan corridor", 2750.0f, -3620.0f, 267.00f, 533, 0, 10.0f, 0.0f, 16.0f },
-    { "Heigan lower hall", 2800.0f, -3665.0f, 273.00f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Bat tunnel west", 2711.30f, -3601.40f, 260.60f, 533, 0, 10.0f, 0.0f, 22.0f },
+    { "Bat tunnel floor", 2760.00f, -3613.80f, 254.70f, 533, 0, 10.0f, 0.0f, 18.0f },
+    { "Bat tunnel north", 2788.20f, -3580.00f, 253.70f, 533, 0, 10.0f, 0.0f, 18.0f },
+    { "Bat cave east", 2868.40f, -3603.10f, 266.10f, 533, 0, 10.0f, 0.0f, 22.0f },
+    { "Bat cave rise", 2866.10f, -3664.80f, 274.60f, 533, 0, 10.0f, 0.0f, 16.0f },
+    // GO 181202 (Heigan entry).
     { "Heigan door", 2822.93f, -3685.30f, 273.54f, 533, 0, 12.0f, 0.0f, 14.0f },
     // East of the platform, on the floor — not 2794,-3706 (Heigan's dance platform).
     { "Heigan the Unclean", 2793.80f, -3685.00f, 273.67f, 533, 15936, 12.0f, 35.0f, 0.0f },
+    // GO 181203 (Heigan exit), then the maggot field: west edge + south row packs.
     { "Heigan exit", 2771.50f, -3737.34f, 273.60f, 533, 0, 12.0f, 0.0f },
-    { "Loatheb west hall", 2840.0f, -3778.0f, 273.55f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Maggot field west", 2757.40f, -3763.00f, 273.80f, 533, 0, 10.0f, 0.0f, 14.0f },
+    { "Maggot field south", 2800.00f, -3783.10f, 273.70f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Maggot field mid", 2847.80f, -3779.50f, 273.70f, 533, 0, 10.0f, 0.0f, 16.0f },
+    { "Maggot field east", 2890.00f, -3784.00f, 273.70f, 533, 0, 10.0f, 0.0f, 16.0f },
     { "Loatheb south hall", 2909.69f, -3818.45f, 273.55f, 533, 0, 10.0f, 0.0f, 16.0f },
     { "Loatheb approach", 2909.69f, -3900.00f, 273.55f, 533, 0, 10.0f, 0.0f, 16.0f },
+    // GO 181241 (Loatheb gate).
     { "Loatheb gate", 2909.69f, -3947.28f, 273.55f, 533, 0, 12.0f, 0.0f, 18.0f },
-    { "Loatheb", 2877.57f, -3967.00f, 273.40f, 533, 16011, 12.0f, 40.0f, 0.0f },
+    { "Loatheb", 2896.00f, -3980.00f, 273.50f, 533, 16011, 12.0f, 45.0f, 0.0f },
     { "Loatheb portal", 2909.00f, -4025.02f, 273.48f, 533, 0, 8.0f, 0.0f, 0.0f, 181577 }
 };
 
