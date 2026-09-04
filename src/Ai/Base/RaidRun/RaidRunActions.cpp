@@ -14,7 +14,9 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "Group.h"
+#include "LastMovementValue.h"
 #include "Log.h"
+#include "MotionMaster.h"
 #include "NaxxSpellIds.h"
 #include "NonCombatActions.h"
 #include "ObjectAccessor.h"
@@ -306,7 +308,40 @@ bool RaidRunLeaderAction::MoveToStepStrict(RaidRunRouteStep const& step)
     if (std::fabs(gen.GetActualEndPosition().z - step.z) > 8.0f)
         return ReportNoPath(step);
 
-    return MoveTo(step.mapId, step.x, step.y, step.z, false, false, false, true);
+    // Walk the exact path we just validated. MoveTo() -> MovePoint() recomputes its own
+    // path and silently falls back to a straight spline through geometry whenever that
+    // recomputation fails or is trivial (<= 2 points) — the "leader merges through the
+    // wall" class of bugs. MoveSplinePath() follows the given points with no fallback.
+    Movement::PointsArray points = gen.GetPath();
+    if (points.size() < 2)
+        return MoveTo(step.mapId, step.x, step.y, step.z, false, false, false, true);
+
+    if (ShouldKeepCurrentMove(step.x, step.y, step.z, MovementPriority::MOVEMENT_NORMAL))
+        return true;
+
+    UpdateMovementState();
+    if (!IsMovingAllowed())
+        return false;
+
+    MotionMaster* mm = bot->GetMotionMaster();
+    if (!mm)
+        return false;
+
+    if (bot->IsSitState())
+        bot->SetStandState(UNIT_STAND_STATE_STAND);
+
+    float length = 0.0f;
+    for (size_t i = 1; i < points.size(); ++i)
+        length += (points[i] - points[i - 1]).length();
+
+    mm->Clear();
+    mm->MoveSplinePath(&points);
+
+    float const delay = std::min(1000.0f * MoveDelay(length),
+        static_cast<float>(sPlayerbotAIConfig.maxWaitForMove));
+    AI_VALUE(LastMovement&, "last movement")
+        .Set(step.mapId, step.x, step.y, step.z, bot->GetOrientation(), delay, MovementPriority::MOVEMENT_NORMAL);
+    return true;
 }
 
 bool RaidRunLeaderAction::Execute(Event event)
