@@ -399,3 +399,25 @@ void RogueCcStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         )
     );
 }
+
+class TricksWhisperTankMultiplier : public Multiplier
+{
+public:
+    TricksWhisperTankMultiplier(PlayerbotAI* botAI) : Multiplier(botAI, "tricks whisper tank") {}
+
+    float GetValue(Action* action) override
+    {
+        if (!action)
+            return 1.0f;
+
+        if (action->getName() == "tricks of the trade on main tank")
+            return 0.0f;
+
+        return 1.0f;
+    }
+};
+
+void TricksWhisperStrategy::InitMultipliers(std::vector<Multiplier*>& multipliers)
+{
+    multipliers.push_back(new TricksWhisperTankMultiplier(botAI));
+}

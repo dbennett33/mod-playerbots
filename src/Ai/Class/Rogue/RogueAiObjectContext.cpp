@@ -30,6 +30,7 @@ public:
         creators["stealthed"] = &RogueStrategyFactoryInternal::stealthed;
         creators["stealth"] = &RogueStrategyFactoryInternal::stealth;
         creators["cc"] = &RogueStrategyFactoryInternal::cc;
+        creators["tricks-whisper"] = &RogueStrategyFactoryInternal::tricks_whisper;
     }
 
 private:
@@ -40,6 +41,7 @@ private:
     static Strategy* stealthed(PlayerbotAI* botAI) { return new StealthedRogueStrategy(botAI); }
     static Strategy* stealth(PlayerbotAI* botAI) { return new StealthStrategy(botAI); }
     static Strategy* cc(PlayerbotAI* botAI) { return new RogueCcStrategy(botAI); }
+    static Strategy* tricks_whisper(PlayerbotAI* botAI) { return new TricksWhisperStrategy(botAI); }
 };
 
 class RogueCombatStrategyFactoryInternal : public NamedObjectContext<Strategy>
