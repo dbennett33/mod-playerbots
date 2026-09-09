@@ -103,6 +103,7 @@ namespace NaxxSpellIds
     static constexpr uint32 NpcEmbalmingSlime = 16024;
 
     // Maexxna
+    static constexpr uint32 NpcMaexxna = 15952;
     static constexpr uint32 NpcWebWrap = 16486;
     static constexpr uint32 WebWrapStun = 28622;
     static constexpr uint32 WebWrapSummon = 28627;

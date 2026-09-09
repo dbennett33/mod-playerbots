@@ -960,6 +960,48 @@ bool MovementAction::ShouldKeepCurrentMove(float x, float y, float /*z*/, Moveme
     return IsWaitingForLastMove(priority);
 }
 
+bool MovementAction::MoveAlongNavmesh(float x, float y, float z)
+{
+    PathGenerator gen(bot);
+    gen.CalculatePath(x, y, z, false);
+    if (gen.GetPathType() & PATHFIND_NOPATH)
+        return false;
+
+    if (std::fabs(gen.GetActualEndPosition().z - z) > 8.0f)
+        return false;
+
+    Movement::PointsArray points = gen.GetPath();
+    if (points.size() < 2)
+        return false;
+
+    if (ShouldKeepCurrentMove(x, y, z, MovementPriority::MOVEMENT_NORMAL))
+        return true;
+
+    UpdateMovementState();
+    if (!IsMovingAllowed())
+        return false;
+
+    MotionMaster* mm = bot->GetMotionMaster();
+    if (!mm)
+        return false;
+
+    if (bot->IsSitState())
+        bot->SetStandState(UNIT_STAND_STATE_STAND);
+
+    float length = 0.0f;
+    for (size_t i = 1; i < points.size(); ++i)
+        length += (points[i] - points[i - 1]).length();
+
+    mm->Clear();
+    mm->MoveSplinePath(&points);
+
+    float const delay = std::min(1000.0f * MoveDelay(length),
+        static_cast<float>(sPlayerbotAIConfig.maxWaitForMove));
+    AI_VALUE(LastMovement&, "last movement")
+        .Set(bot->GetMapId(), x, y, z, bot->GetOrientation(), delay, MovementPriority::MOVEMENT_NORMAL);
+    return true;
+}
+
 bool MovementAction::IsMovingAllowed()
 {
     return botAI->CanMove();

@@ -70,4 +70,14 @@ public:
     std::string const getName() override { return "cc"; }
 };
 
+// Holds Tricks of the Trade for a whisper request instead of the tank.
+class TricksWhisperStrategy : public Strategy
+{
+public:
+    TricksWhisperStrategy(PlayerbotAI* botAI) : Strategy(botAI) {}
+
+    void InitMultipliers(std::vector<Multiplier*>& multipliers) override;
+    std::string const getName() override { return "tricks-whisper"; }
+};
+
 #endif
